@@ -40,14 +40,16 @@ export function GuruRow({ g }: Props) {
           }}
         />
         <span style={{ fontWeight: 600, fontSize: 12, width: 90, flexShrink: 0 }}>{g.n}</span>
-        <span style={{ fontSize: 11, color: T.soft, flex: 1 }}>{g.f}</span>
+        <span style={{ fontSize: 11, color: T.soft, flex: 1, minWidth: 0, wordBreak: "break-word" }}>{g.f}</span>
         <span
           style={{
             fontFamily: "'IBM Plex Mono',monospace",
             fontSize: 11.5,
             fontWeight: 500,
             color: dotColor(g.s),
-            whiteSpace: "nowrap",
+            textAlign: "right",
+            wordBreak: "break-word",
+            maxWidth: 130,
           }}
         >
           {g.m}
