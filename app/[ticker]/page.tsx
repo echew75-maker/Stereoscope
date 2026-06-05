@@ -182,11 +182,12 @@ export default function TickerPage() {
       if (commitment) {
         setPending(commitment);
       }
-    } catch {
+    } catch (err: unknown) {
+      const detail = err instanceof Error ? err.message : "unknown error";
       const em: JournalMessage = {
         id: "m" + (Date.now() + 1),
         role: "assistant",
-        content: "Connection interrupted. Your entry was saved.",
+        content: `Error: ${detail}`,
         ts: Date.now(),
       };
       const withErr = [...updMsgs, em];
