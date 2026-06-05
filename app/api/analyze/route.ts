@@ -75,6 +75,24 @@ export async function POST(req: NextRequest) {
     // ── Merge into final ReportData ──
     const reportData = parseReportJSON(growthRaw, valueRaw, arbiterRaw, normalizedTicker);
 
+    // Debug: if price is still 0, return raw snippets so we can diagnose
+    if (!reportData.price || reportData.price === 0) {
+      return Response.json({
+        success: true,
+        data: reportData,
+        cached: false,
+        analysis_time_ms: Date.now() - startTime,
+        debug: {
+          growthSnippet: growthRaw.substring(0, 500),
+          valueSnippet: valueRaw.substring(0, 500),
+          arbiterSnippet: arbiterRaw.substring(0, 500),
+          growthLen: growthRaw.length,
+          valueLen: valueRaw.length,
+          arbiterLen: arbiterRaw.length,
+        },
+      });
+    }
+
     // ── Save to cache ──
     await supabase.from("reports").upsert(
       {

@@ -11,7 +11,8 @@ export async function callGemini(
     contents: [{ role: "user", parts: [{ text: userMessage }] }],
     generation_config: {
       temperature: 0.2,
-      max_output_tokens: 8192,
+      max_output_tokens: 16384,
+      thinking_config: { thinking_budget: 0 },
     },
   };
 
@@ -34,18 +35,10 @@ export async function callGemini(
   }
 
   const data = await res.json();
-
   const parts = data.candidates?.[0]?.content?.parts || [];
 
-  // Gemini 2.5 returns thought parts (thought: true) alongside the actual response.
-  // We must exclude them or bracket-counting JSON extraction breaks.
-  const outputParts = parts.filter(
-    (p: { text?: string; thought?: boolean }) => p.text && !p.thought
-  );
-  const fallbackParts = parts.filter((p: { text?: string }) => p.text);
-  const activeParts = outputParts.length > 0 ? outputParts : fallbackParts;
-
-  const text = activeParts
+  const text = parts
+    .filter((p: { text?: string }) => p.text)
     .map((p: { text: string }) => p.text)
     .join("\n");
 
