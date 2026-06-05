@@ -45,25 +45,21 @@ export async function POST(req: NextRequest) {
     const startTime = Date.now();
     const schemaInstructions = ANALYSIS_SCHEMA_PROMPT;
 
-    // ── STAGE 1: Growth Scout ──
-    const growthRaw = await callGemini(
-      GROWTH_SCOUT_PROMPT +
-        "\n\n---\n\nOUTPUT FORMAT INSTRUCTIONS:\n" +
-        schemaInstructions,
-      `Analyze the stock ${normalizedTicker}. Search the web for its most recent quarterly filing (10-Q or equivalent), current stock price, revenue growth, NDR, RPO, EPS history, institutional ownership, and analyst targets. Produce the complete Growth Scout Phase 1 scratchpad and Phase 2 guru analysis. Then return the structured JSON object as specified.`,
-      true
-    );
+    // ── STAGES 1+2: Growth Scout and Value Guard run in parallel ──
+    const [growthRaw, valueRaw] = await Promise.all([
+      callGemini(
+        GROWTH_SCOUT_PROMPT + "\n\n---\n\nOUTPUT FORMAT INSTRUCTIONS:\n" + schemaInstructions,
+        `Analyze the stock ${normalizedTicker}. Search the web for its most recent quarterly filing (10-Q or equivalent), current stock price, revenue growth, NDR, RPO, EPS history, institutional ownership, and analyst targets. Produce the complete Growth Scout Phase 1 scratchpad and Phase 2 guru analysis. Then return the structured JSON object as specified.`,
+        true
+      ),
+      callGemini(
+        VALUE_GUARD_PROMPT + "\n\n---\n\nOUTPUT FORMAT INSTRUCTIONS:\n" + schemaInstructions,
+        `Analyze the stock ${normalizedTicker}. Search the web for its most recent quarterly filing (10-Q or equivalent), balance sheet, cash flow statement, share count, SBC, debt, warrant liabilities, and analyst targets. Produce the complete Value Guard Phase 1 scratchpad and Phase 2 guru analysis. Then return the structured JSON object as specified.`,
+        true
+      ),
+    ]);
 
-    // ── STAGE 2: Value Guard ──
-    const valueRaw = await callGemini(
-      VALUE_GUARD_PROMPT +
-        "\n\n---\n\nOUTPUT FORMAT INSTRUCTIONS:\n" +
-        schemaInstructions,
-      `Analyze the stock ${normalizedTicker}. Search the web for its most recent quarterly filing (10-Q or equivalent), balance sheet, cash flow statement, share count, SBC, debt, warrant liabilities, and analyst targets. Produce the complete Value Guard Phase 1 scratchpad and Phase 2 guru analysis. Then return the structured JSON object as specified.`,
-      true
-    );
-
-    // ── STAGE 3: Arbiter ──
+    // ── STAGE 3: Arbiter (uses both outputs above) ──
     const arbiterRaw = await callGemini(
       ARBITER_PROMPT +
         "\n\n---\n\nOUTPUT FORMAT INSTRUCTIONS:\n" +

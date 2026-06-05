@@ -1,6 +1,12 @@
 import { ReportData } from "@/lib/types";
 
-export const ANALYSIS_SCHEMA_PROMPT = `After completing your analysis, return ONLY a single JSON object (no markdown, no backticks, no preamble) with this exact schema:
+export const ANALYSIS_SCHEMA_PROMPT = `After completing your analysis, you MUST output the JSON object wrapped in <json> and </json> tags, exactly like this:
+
+<json>
+{ ... your JSON here ... }
+</json>
+
+No other text after the closing </json> tag. No markdown. No backticks. The schema:
 
 {
   "name": "Full Company Name",
@@ -111,58 +117,46 @@ export function parseReportJSON(
   arbiterRaw: string,
   ticker: string
 ): ReportData {
-  // Try to extract JSON from each response.
-  // Gemini 2.5 Flash outputs analysis prose before the JSON, and prose can contain
-  // bare {word} tokens that fool a naive "find first {" approach. We instead collect
-  // all { positions and try from last-to-first, preferring the object that contains
-  // schema keys ("name", "price") — i.e. the actual report JSON at the end.
+  const tryParse = (s: string): Record<string, unknown> | null => {
+    try { return JSON.parse(s); } catch {}
+    try { return JSON.parse(s.replace(/,\s*}/g, "}").replace(/,\s*]/g, "]")); } catch {}
+    return null;
+  };
+
   const extractJSON = (text: string): Record<string, unknown> | null => {
-    const cleaned = text
-      .replace(/```json\s*/g, "")
-      .replace(/```\s*/g, "")
-      .trim();
+    // Primary: extract between <json> ... </json> delimiters
+    const tagged = text.match(/<json>([\s\S]*?)<\/json>/i);
+    if (tagged) {
+      const r = tryParse(tagged[1].trim());
+      if (r) return r;
+    }
 
-    // Direct parse — succeeds when the model obeyed "output only JSON"
-    try {
-      return JSON.parse(cleaned);
-    } catch {}
+    // Fallback: direct parse after stripping markdown fences
+    const cleaned = text.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
+    const direct = tryParse(cleaned);
+    if (direct) return direct;
 
-    // Collect every { position
+    // Fallback: scan all { positions last-to-first, prefer objects with schema keys
     const starts: number[] = [];
     for (let i = 0; i < cleaned.length; i++) {
       if (cleaned[i] === "{") starts.push(i);
     }
 
-    const tryExtract = (start: number): Record<string, unknown> | null => {
+    const bracketExtract = (start: number): Record<string, unknown> | null => {
       let depth = 0;
       for (let i = start; i < cleaned.length; i++) {
         if (cleaned[i] === "{") depth++;
-        if (cleaned[i] === "}") {
-          depth--;
-          if (depth === 0) {
-            const candidate = cleaned.substring(start, i + 1);
-            try { return JSON.parse(candidate); } catch {}
-            try {
-              return JSON.parse(
-                candidate.replace(/,\s*}/g, "}").replace(/,\s*]/g, "]")
-              );
-            } catch {}
-            return null;
-          }
-        }
+        if (cleaned[i] === "}") { depth--; if (depth === 0) return tryParse(cleaned.substring(start, i + 1)); }
       }
       return null;
     };
 
-    // Pass 1: last-to-first, prefer objects that have schema keys
     for (let i = starts.length - 1; i >= 0; i--) {
-      const r = tryExtract(starts[i]);
+      const r = bracketExtract(starts[i]);
       if (r && ("name" in r || "price" in r)) return r;
     }
-
-    // Pass 2: any parseable object (last-to-first)
     for (let i = starts.length - 1; i >= 0; i--) {
-      const r = tryExtract(starts[i]);
+      const r = bracketExtract(starts[i]);
       if (r) return r;
     }
 
