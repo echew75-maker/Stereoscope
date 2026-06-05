@@ -41,7 +41,7 @@ export function StockHeader({ rd }: Props) {
           </h1>
           <div style={{ fontSize: 13, color: T.soft, marginTop: 5 }}>
             <b style={{ color: T.ink }}>
-              {rd.exchange}: {rd.ticker}
+              {rd.exchange ? `${rd.exchange}: ` : ""}{rd.ticker}
             </b>{" "}
             <span
               style={{

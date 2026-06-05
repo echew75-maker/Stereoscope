@@ -35,11 +35,19 @@ export async function callGemini(
 
   const data = await res.json();
 
-  const text =
-    data.candidates?.[0]?.content?.parts
-      ?.filter((p: { text?: string }) => p.text)
-      ?.map((p: { text: string }) => p.text)
-      ?.join("\n") || "";
+  const parts = data.candidates?.[0]?.content?.parts || [];
+
+  // Gemini 2.5 returns thought parts (thought: true) alongside the actual response.
+  // We must exclude them or bracket-counting JSON extraction breaks.
+  const outputParts = parts.filter(
+    (p: { text?: string; thought?: boolean }) => p.text && !p.thought
+  );
+  const fallbackParts = parts.filter((p: { text?: string }) => p.text);
+  const activeParts = outputParts.length > 0 ? outputParts : fallbackParts;
+
+  const text = activeParts
+    .map((p: { text: string }) => p.text)
+    .join("\n");
 
   if (!text) throw new Error("Empty Gemini response");
   return text;

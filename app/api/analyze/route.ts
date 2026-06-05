@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
         report_data: reportData,
         filing_period: reportData.filingPeriod,
         filing_date: reportData.filingDate,
-        gemini_model: "gemini-2.0-flash",
+        gemini_model: "gemini-2.5-flash",
         expires_at: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
       },
       { onConflict: "ticker,filing_period" }
