@@ -111,50 +111,62 @@ export function parseReportJSON(
   arbiterRaw: string,
   ticker: string
 ): ReportData {
-  // Try to extract JSON from each response
+  // Try to extract JSON from each response.
+  // Gemini 2.5 Flash outputs analysis prose before the JSON, and prose can contain
+  // bare {word} tokens that fool a naive "find first {" approach. We instead collect
+  // all { positions and try from last-to-first, preferring the object that contains
+  // schema keys ("name", "price") — i.e. the actual report JSON at the end.
   const extractJSON = (text: string): Record<string, unknown> | null => {
-    // First try direct JSON parse
+    const cleaned = text
+      .replace(/```json\s*/g, "")
+      .replace(/```\s*/g, "")
+      .trim();
+
+    // Direct parse — succeeds when the model obeyed "output only JSON"
     try {
-      const cleaned = text
-        .replace(/```json\s*/g, "")
-        .replace(/```\s*/g, "")
-        .trim();
       return JSON.parse(cleaned);
-    } catch {
-      // Try bracket counting
-      const firstBrace = text.indexOf("{");
-      if (firstBrace >= 0) {
-        let depth = 0;
-        let lastBrace = -1;
-        for (let i = firstBrace; i < text.length; i++) {
-          if (text[i] === "{") depth++;
-          if (text[i] === "}") {
-            depth--;
-            if (depth === 0) {
-              lastBrace = i;
-              break;
-            }
-          }
-        }
-        if (lastBrace > firstBrace) {
-          try {
-            return JSON.parse(text.substring(firstBrace, lastBrace + 1));
-          } catch {
-            // Try trailing comma repair
+    } catch {}
+
+    // Collect every { position
+    const starts: number[] = [];
+    for (let i = 0; i < cleaned.length; i++) {
+      if (cleaned[i] === "{") starts.push(i);
+    }
+
+    const tryExtract = (start: number): Record<string, unknown> | null => {
+      let depth = 0;
+      for (let i = start; i < cleaned.length; i++) {
+        if (cleaned[i] === "{") depth++;
+        if (cleaned[i] === "}") {
+          depth--;
+          if (depth === 0) {
+            const candidate = cleaned.substring(start, i + 1);
+            try { return JSON.parse(candidate); } catch {}
             try {
-              const repaired = text
-                .substring(firstBrace, lastBrace + 1)
-                .replace(/,\s*}/g, "}")
-                .replace(/,\s*]/g, "]");
-              return JSON.parse(repaired);
-            } catch {
-              return null;
-            }
+              return JSON.parse(
+                candidate.replace(/,\s*}/g, "}").replace(/,\s*]/g, "]")
+              );
+            } catch {}
+            return null;
           }
         }
       }
       return null;
+    };
+
+    // Pass 1: last-to-first, prefer objects that have schema keys
+    for (let i = starts.length - 1; i >= 0; i--) {
+      const r = tryExtract(starts[i]);
+      if (r && ("name" in r || "price" in r)) return r;
     }
+
+    // Pass 2: any parseable object (last-to-first)
+    for (let i = starts.length - 1; i >= 0; i--) {
+      const r = tryExtract(starts[i]);
+      if (r) return r;
+    }
+
+    return null;
   };
 
   const growth = extractJSON(growthRaw) || {};
