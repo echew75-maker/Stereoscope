@@ -158,10 +158,12 @@ export default function TickerPage() {
         body: JSON.stringify({
           ticker,
           messages: updMsgs.map((m) => ({ role: m.role, content: m.content })),
+          reportData,
         }),
       });
 
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `Journal API error ${res.status}`);
       const rawReply = data.reply || "Connection issue — try again.";
       const commitment = data.commitment_detected
         ? parseCommitment(`[COMMITMENT: ${data.commitment_detected.text} | THRESHOLD: ${data.commitment_detected.threshold} | CHECK: ${data.commitment_detected.checkDate}]`)

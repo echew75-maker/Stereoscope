@@ -16,7 +16,7 @@ function stripCommitment(text: string) {
 }
 
 export async function POST(req: NextRequest) {
-  const { ticker, messages } = await req.json();
+  const { ticker, messages, reportData: clientReportData } = await req.json();
 
   if (!ticker || !messages?.length) {
     return Response.json({ success: false, error: "Missing ticker or messages" }, { status: 400 });
@@ -29,7 +29,8 @@ export async function POST(req: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Load report data for context
+  // Load report data — prefer Supabase cache, fall back to client-supplied data
+  let reportData: ReportData | null = null;
   const { data: reportRow } = await supabase
     .from("reports")
     .select("report_data")
@@ -38,11 +39,16 @@ export async function POST(req: NextRequest) {
     .limit(1)
     .single();
 
-  if (!reportRow) {
+  if (reportRow) {
+    reportData = reportRow.report_data as ReportData;
+  } else if (clientReportData) {
+    reportData = clientReportData as ReportData;
+  }
+
+  if (!reportData) {
     return Response.json({ success: false, error: "Report not found — run analysis first" }, { status: 404 });
   }
 
-  const reportData = reportRow.report_data as ReportData;
   const systemPrompt = buildSparringPrompt(reportData);
 
   // Call Claude Haiku
