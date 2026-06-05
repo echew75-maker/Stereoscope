@@ -1,0 +1,30 @@
+export const tokens = {
+  bg: "#F8F7F3",
+  card: "#FFFFFF",
+  ink: "#141618",
+  soft: "#52565E",
+  faint: "#939699",
+  line: "#DEDAD0",
+  lineSoft: "#ECEADE",
+  growth: "#0B7A61",
+  growthSoft: "#E4F0EC",
+  growthLine: "#B8DBCD",
+  value: "#27537A",
+  valueSoft: "#E6EDF3",
+  valueLine: "#BDCFDF",
+  gold: "#9E7420",
+  goldSoft: "#F3ECDA",
+  goldLine: "#D9CC9F",
+  bull: "#177D3E",
+  neutral: "#A97B23",
+  bear: "#B53429",
+  munger: "#55298A",
+  mungerSoft: "#EDE8F5",
+  shadow: "0 1px 2px rgba(14,16,18,.04),0 6px 20px rgba(14,16,18,.05)",
+} as const;
+
+export const fonts = {
+  display: "'Fraunces', serif",
+  body: "'IBM Plex Sans', -apple-system, sans-serif",
+  mono: "'IBM Plex Mono', monospace",
+};
