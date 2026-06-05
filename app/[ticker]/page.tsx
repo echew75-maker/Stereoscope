@@ -80,7 +80,7 @@ export default function TickerPage() {
   }, [msgs, jThinking, pending]);
 
   // Trigger analysis
-  const analyzeStock = useCallback(async () => {
+  const analyzeStock = useCallback(async (force = false) => {
     setScreen("analyzing");
     setStageStatus([1, 0, 0]);
     setAnalyzeError(null);
@@ -89,7 +89,7 @@ export default function TickerPage() {
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ticker }),
+        body: JSON.stringify({ ticker, force }),
       });
 
       setStageStatus([2, 1, 0]);
@@ -369,6 +369,25 @@ export default function TickerPage() {
                 {k === "journal" ? ` (${commits.length})` : ""}
               </button>
             ))}
+            <button
+              onClick={() => analyzeStock(true)}
+              className="no-print"
+              title="Fetch fresh analysis from the web"
+              style={{
+                border: `1px solid ${T.line}`,
+                background: T.card,
+                color: T.soft,
+                borderRadius: 7,
+                padding: "5px 14px",
+                fontSize: 11,
+                cursor: "pointer",
+                fontFamily: "'IBM Plex Mono',monospace",
+                letterSpacing: ".03em",
+                transition: "all .15s",
+              }}
+            >
+              ↻ Refresh
+            </button>
             <button
               onClick={handleDownloadPDF}
               className="no-print"

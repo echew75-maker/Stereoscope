@@ -9,7 +9,7 @@ import { NextRequest } from "next/server";
 export const maxDuration = 300;
 
 export async function POST(req: NextRequest) {
-  const { ticker } = await req.json();
+  const { ticker, force } = await req.json();
 
   if (!ticker || !/^[A-Z]{1,6}$/.test(ticker.toUpperCase())) {
     return Response.json({ success: false, error: "Invalid ticker" }, { status: 400 });
@@ -18,25 +18,27 @@ export async function POST(req: NextRequest) {
   const normalizedTicker = ticker.toUpperCase();
   const supabase = await createServerClient();
 
-  // Check cache
-  const { data: cached } = await supabase
-    .from("reports")
-    .select("*")
-    .eq("ticker", normalizedTicker)
-    .gt("expires_at", new Date().toISOString())
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .single();
+  // Check cache (skipped when force=true)
+  if (!force) {
+    const { data: cached } = await supabase
+      .from("reports")
+      .select("*")
+      .eq("ticker", normalizedTicker)
+      .gt("expires_at", new Date().toISOString())
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
 
-  if (cached) {
-    return Response.json({
-      success: true,
-      data: cached.report_data,
-      cached: true,
-      age_hours: Math.round(
-        (Date.now() - new Date(cached.created_at).getTime()) / 3600000
-      ),
-    });
+    if (cached) {
+      return Response.json({
+        success: true,
+        data: cached.report_data,
+        cached: true,
+        age_hours: Math.round(
+          (Date.now() - new Date(cached.created_at).getTime()) / 3600000
+        ),
+      });
+    }
   }
 
   try {
@@ -81,7 +83,7 @@ export async function POST(req: NextRequest) {
         filing_period: reportData.filingPeriod,
         filing_date: reportData.filingDate,
         gemini_model: "gemini-2.5-flash",
-        expires_at: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
       },
       { onConflict: "ticker,filing_period" }
     );
