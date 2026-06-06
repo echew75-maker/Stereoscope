@@ -10,7 +10,7 @@ export function MungerPremortem({ rd }: Props) {
 
   return (
     <section style={{ marginTop: 30 }}>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 9, marginBottom: 12 }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 9, marginBottom: 6 }}>
         <span
           style={{
             fontSize: 10.5,
@@ -31,6 +31,17 @@ export function MungerPremortem({ rd }: Props) {
           Charlie Munger Pre-Mortem
         </h2>
       </div>
+      <p
+        style={{
+          fontSize: 13,
+          color: T.soft,
+          lineHeight: 1.5,
+          marginBottom: 12,
+          maxWidth: 760,
+        }}
+      >
+        Identify the critical structural risks and narrative shifts that could cause a 50% permanent impairment of capital over the next five years.
+      </p>
 
       <div
         style={{
