@@ -1,5 +1,6 @@
 import { tokens as T } from "@/lib/tokens";
 import { ReportData } from "@/lib/types";
+import { GlossaryText } from "@/lib/highlightGlossaryTerms";
 
 interface Props {
   rd: ReportData;
@@ -198,7 +199,7 @@ export function ValuationOverlay({ rd }: Props) {
               marginBottom: 8,
             }}
           >
-            {rd.crux}
+            <GlossaryText text={rd.crux} />
           </div>
           <div
             style={{
@@ -222,7 +223,7 @@ export function ValuationOverlay({ rd }: Props) {
               >
                 Growth
               </div>
-              <div style={{ fontSize: 11, color: T.soft }}>{rd.cruxGrowth}</div>
+              <div style={{ fontSize: 11, color: T.soft }}><GlossaryText text={rd.cruxGrowth} /></div>
             </div>
             <div
               style={{
@@ -243,7 +244,7 @@ export function ValuationOverlay({ rd }: Props) {
               >
                 Value
               </div>
-              <div style={{ fontSize: 11, color: T.soft }}>{rd.cruxValue}</div>
+              <div style={{ fontSize: 11, color: T.soft }}><GlossaryText text={rd.cruxValue} /></div>
             </div>
           </div>
         </div>
@@ -277,7 +278,7 @@ export function ValuationOverlay({ rd }: Props) {
           >
             {rd.payingForTitle}
           </div>
-          <div style={{ fontSize: 12, color: T.soft, lineHeight: 1.5 }}>{rd.payingForDesc}</div>
+          <div style={{ fontSize: 12, color: T.soft, lineHeight: 1.5 }}><GlossaryText text={rd.payingForDesc} /></div>
         </div>
       </div>
 

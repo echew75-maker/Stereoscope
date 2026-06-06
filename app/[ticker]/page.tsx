@@ -5,6 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import { tokens as T } from "@/lib/tokens";
 import { ReportData, JournalMessage, Commitment } from "@/lib/types";
 import { parseCommitment } from "@/lib/commitment";
+import { GlossaryTerm } from "@/components/GlossaryTerm";
+import { GLOSSARY } from "@/lib/glossary";
 
 // Components
 import { Masthead } from "@/components/layout/Masthead";
@@ -474,7 +476,11 @@ export default function TickerPage() {
             </div>
             <p style={{ fontSize: 12.5, color: T.soft, lineHeight: 1.55 }}>
               <b style={{ color: T.ink }}>
-                Stereoscope does not issue a buy, hold, or sell rating.
+                Stereoscope does not issue a{" "}
+                <GlossaryTerm label={GLOSSARY.ANALYST_VERDICT.label} definition={GLOSSARY.ANALYST_VERDICT.definition}>
+                  buy, hold, or sell rating
+                </GlossaryTerm>
+                .
               </b>{" "}
               Two independent engines analysed {rd.ticker} blind to each other. Below is what
               each found and the single question that divides them.
@@ -572,8 +578,15 @@ export default function TickerPage() {
                 padding: "10px 13px",
               }}
             >
-              <b>Stereoscope</b> does not provide personalised financial advice and issues no
-              buy/hold/sell recommendation. Conviction needs two eyes — the decision is yours.
+              <b>Stereoscope</b> does not provide{" "}
+              <GlossaryTerm label={GLOSSARY.PERSONALISED_ADVICE.label} definition={GLOSSARY.PERSONALISED_ADVICE.definition}>
+                personalised financial advice
+              </GlossaryTerm>{" "}
+              and issues no buy/hold/sell recommendation.{" "}
+              <GlossaryTerm label={GLOSSARY.CONVICTION.label} definition={GLOSSARY.CONVICTION.definition}>
+                Conviction
+              </GlossaryTerm>{" "}
+              needs two eyes — the decision is yours.
             </div>
             {rd.filingPeriod && (
               <div

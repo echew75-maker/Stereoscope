@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { tokens as T } from "@/lib/tokens";
+import { GlossaryTerm } from "@/components/GlossaryTerm";
+import { GLOSSARY } from "@/lib/glossary";
 
 type PriorView = "bullish" | "neutral" | "bearish";
 
@@ -409,7 +411,11 @@ export function AnalyzingSequence({ ticker, stageStatus, error, onRetry, onBack,
               )}
               <div style={{ fontSize: 28, color: stageStatus[0] === 2 ? T.bull : T.growth }}>◇</div>
             </div>
-            <div style={{ fontWeight: 600, fontSize: 13, color: T.ink, marginBottom: 4 }}>Growth Scout</div>
+            <div style={{ fontWeight: 600, fontSize: 13, color: T.ink, marginBottom: 4 }}>
+              <GlossaryTerm label={GLOSSARY.GROWTH_SCOUT.label} definition={GLOSSARY.GROWTH_SCOUT.definition}>
+                Growth Scout
+              </GlossaryTerm>
+            </div>
             <div style={{ fontSize: 11, color: T.growth, fontFamily: "'IBM Plex Mono',monospace", marginBottom: 12 }}>
               {stageStatus[0] === 2
                 ? "✓ Complete"
@@ -485,7 +491,11 @@ export function AnalyzingSequence({ ticker, stageStatus, error, onRetry, onBack,
             {arbiterActive ? (
               <>
                 <div style={{ fontSize: 26, color: T.gold, marginBottom: 8 }}>◎</div>
-                <div style={{ fontWeight: 600, fontSize: 13, color: T.ink, marginBottom: 4, whiteSpace: "nowrap" }}>The Arbiter</div>
+                <div style={{ fontWeight: 600, fontSize: 13, color: T.ink, marginBottom: 4, whiteSpace: "nowrap" }}>
+                  <GlossaryTerm label={GLOSSARY.ARBITER.label} definition={GLOSSARY.ARBITER.definition}>
+                    The Arbiter
+                  </GlossaryTerm>
+                </div>
                 <div style={{ fontSize: 11, color: T.gold, fontFamily: "'IBM Plex Mono',monospace", whiteSpace: "nowrap" }}>
                   {stageStatus[2] === 2
                     ? "✓ Complete"
@@ -543,7 +553,11 @@ export function AnalyzingSequence({ ticker, stageStatus, error, onRetry, onBack,
               )}
               <div style={{ fontSize: 28, color: stageStatus[1] === 2 ? T.bull : T.value }}>◆</div>
             </div>
-            <div style={{ fontWeight: 600, fontSize: 13, color: T.ink, marginBottom: 4 }}>Value Guard</div>
+            <div style={{ fontWeight: 600, fontSize: 13, color: T.ink, marginBottom: 4 }}>
+              <GlossaryTerm label={GLOSSARY.VALUE_GUARD.label} definition={GLOSSARY.VALUE_GUARD.definition}>
+                Value Guard
+              </GlossaryTerm>
+            </div>
             <div style={{ fontSize: 11, color: T.value, fontFamily: "'IBM Plex Mono',monospace", marginBottom: 12 }}>
               {stageStatus[1] === 2
                 ? "✓ Complete"

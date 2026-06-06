@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { tokens as T } from "@/lib/tokens";
 import { Footer } from "@/components/layout/Footer";
+import { GlossaryTerm } from "@/components/GlossaryTerm";
+import { GLOSSARY } from "@/lib/glossary";
 
 interface SearchResult { symbol: string; name: string; exchange: string }
 
@@ -157,7 +159,12 @@ export default function LandingPage() {
               margin: "0 auto 16px",
             }}
           >
-            <em style={{ fontStyle: "italic", color: T.gold }}>Conviction</em> needs two eyes.
+            <em style={{ fontStyle: "italic", color: T.gold }}>
+              <GlossaryTerm label={GLOSSARY.CONVICTION.label} definition={GLOSSARY.CONVICTION.definition}>
+                Conviction
+              </GlossaryTerm>
+            </em>{" "}
+            needs two eyes.
           </h1>
           <p
             style={{
@@ -317,7 +324,10 @@ export default function LandingPage() {
               {
                 icon: "◇",
                 label: "Growth Scout",
-                sub: "7 gurus · hyper-scaling engines",
+                labelKey: "GROWTH_SCOUT" as const,
+                subPrefix: "7 gurus · ",
+                subTerm: "hyper-scaling engines",
+                subTermKey: "HYPER_SCALING" as const,
                 color: T.growth,
                 bg: T.growthSoft,
               },
@@ -325,7 +335,10 @@ export default function LandingPage() {
               {
                 icon: "◆",
                 label: "Value Guard",
-                sub: "7 gurus · forensic accounting",
+                labelKey: "VALUE_GUARD" as const,
+                subPrefix: "7 gurus · ",
+                subTerm: "forensic accounting",
+                subTermKey: "FORENSIC_ACCOUNTING" as const,
                 color: T.value,
                 bg: T.valueSoft,
               },
@@ -333,7 +346,10 @@ export default function LandingPage() {
               {
                 icon: "◎",
                 label: "The Arbiter",
-                sub: "No verdict · frames the bet",
+                labelKey: "ARBITER" as const,
+                subPrefix: "No verdict · frames the bet",
+                subTerm: "",
+                subTermKey: null,
                 color: T.gold,
                 bg: T.goldSoft,
               },
@@ -372,9 +388,18 @@ export default function LandingPage() {
                       marginBottom: 4,
                     }}
                   >
-                    {s.label}
+                    <GlossaryTerm label={GLOSSARY[s.labelKey].label} definition={GLOSSARY[s.labelKey].definition}>
+                      {s.label}
+                    </GlossaryTerm>
                   </div>
-                  <div style={{ fontSize: 12, color: T.soft }}>{s.sub}</div>
+                  <div style={{ fontSize: 12, color: T.soft }}>
+                    {s.subPrefix}
+                    {s.subTermKey && (
+                      <GlossaryTerm label={GLOSSARY[s.subTermKey].label} definition={GLOSSARY[s.subTermKey].definition}>
+                        {s.subTerm}
+                      </GlossaryTerm>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <div
