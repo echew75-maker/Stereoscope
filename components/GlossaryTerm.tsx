@@ -45,10 +45,14 @@ export function GlossaryTerm({ label, definition, children }: Props) {
       onClick={(e) => { e.stopPropagation(); setOpen((o) => !o); }}
       style={{
         position: "relative",
-        borderBottom: "1.5px dotted currentColor",
+        borderBottom: "2px dotted #9E7420",
+        backgroundColor: open ? "#F3ECDA" : "transparent",
+        transition: "background-color .15s",
         cursor: "help",
         display: "inline",
         whiteSpace: "normal",
+        padding: "0 1px",
+        borderRadius: 2,
       }}
     >
       {children}

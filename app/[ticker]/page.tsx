@@ -634,6 +634,83 @@ export default function TickerPage() {
 
           <InvalidationMatrix triggers={rd.triggers} />
 
+          {/* Capture-your-read CTA */}
+          <section
+            className="no-print"
+            style={{
+              marginTop: 32,
+              border: `1.5px solid ${T.goldLine}`,
+              borderRadius: 12,
+              padding: "18px 20px",
+              background: "linear-gradient(0deg,#FCF8EE,#FFFDF8)",
+              display: "flex",
+              gap: 16,
+              alignItems: "center",
+              flexWrap: "wrap",
+            }}
+          >
+            <div
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: "50%",
+                background: T.goldSoft,
+                color: T.gold,
+                display: "grid",
+                placeItems: "center",
+                fontSize: 18,
+                flexShrink: 0,
+              }}
+            >
+              ✎
+            </div>
+            <div style={{ flex: 1, minWidth: 260 }}>
+              <div
+                style={{
+                  fontFamily: "'Fraunces',serif",
+                  fontWeight: 500,
+                  fontSize: 16,
+                  color: T.ink,
+                  marginBottom: 4,
+                }}
+              >
+                Now capture your own read.
+              </div>
+              <div style={{ fontSize: 12.5, color: T.soft, lineHeight: 1.55 }}>
+                You&apos;ve seen both lenses and the question that divides them. Writing
+                down your thesis — and the threshold that would prove it wrong — is what
+                turns reading into conviction.
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                setReportTab("journal");
+                setTimeout(
+                  () =>
+                    setJInput(
+                      `My read on ${rd.ticker}: I lean [bull/bear] because...\n\nThe Crux question is: ${rd.crux || "—"}\n\nMy answer:`
+                    ),
+                  100
+                );
+              }}
+              style={{
+                border: "none",
+                background: T.ink,
+                color: "#fff",
+                borderRadius: 8,
+                padding: "10px 16px",
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
+                fontFamily: "'IBM Plex Sans',sans-serif",
+                whiteSpace: "nowrap",
+                flexShrink: 0,
+              }}
+            >
+              ✎ Open the Journal →
+            </button>
+          </section>
+
           {/* Footer */}
           <footer style={{ marginTop: 36, borderTop: `1px solid ${T.line}`, paddingTop: 18 }}>
             {rd.sources && (

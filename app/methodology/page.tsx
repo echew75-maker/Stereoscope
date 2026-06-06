@@ -444,6 +444,59 @@ export default function MethodologyPage() {
           </div>
         </div>
 
+        <div
+          style={{
+            marginTop: 30,
+            border: `1.5px solid ${T.goldLine}`,
+            borderRadius: 12,
+            padding: "16px 18px",
+            background: "linear-gradient(0deg,#FCF8EE,#FFFDF8)",
+            display: "flex",
+            gap: 12,
+            alignItems: "flex-start",
+          }}
+        >
+          <div
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: "50%",
+              background: T.goldSoft,
+              color: T.gold,
+              display: "grid",
+              placeItems: "center",
+              fontSize: 14,
+              flexShrink: 0,
+              marginTop: 1,
+              fontWeight: 600,
+            }}
+          >
+            ⚠
+          </div>
+          <div>
+            <div
+              style={{
+                fontFamily: "'Fraunces',serif",
+                fontWeight: 500,
+                fontSize: 15.5,
+                color: T.ink,
+                marginBottom: 6,
+              }}
+            >
+              There is no weighted consensus score.
+            </div>
+            <div style={{ fontSize: 13, color: T.soft, lineHeight: 1.6 }}>
+              Each of the seven gurus per lens produces a stand-alone verdict —
+              bullish, neutral, or bearish — based on its own framework. Stereoscope
+              does not average them, weight them, or collapse them into a single
+              score. That&apos;s why every report shows seven badges per lens
+              instead of one composite number, and why the Arbiter is explicitly
+              prohibited from blending the two price bands into one fair value.
+              The product&apos;s whole point is to keep the disagreement visible.
+            </div>
+          </div>
+        </div>
+
         <SectionHeader kicker="The Disagreement Score" title="How we measure tension" />
         <p style={{ fontSize: 13.5, color: T.soft, lineHeight: 1.65, maxWidth: 700 }}>
           The chip near the Synthesis section turns &ldquo;how far apart did the two lenses
