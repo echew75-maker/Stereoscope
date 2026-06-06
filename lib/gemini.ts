@@ -9,8 +9,6 @@ export async function callGemini(
   const body: Record<string, unknown> = {
     system_instruction: { parts: [{ text: systemPrompt }] },
     contents: [{ role: "user", parts: [{ text: userMessage }] }],
-    // thinking_config at top level (not inside generation_config)
-    thinking_config: { thinking_budget: 0 },
     generation_config: {
       temperature: 0.2,
       max_output_tokens: 16384,
