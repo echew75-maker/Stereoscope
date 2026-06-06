@@ -91,7 +91,11 @@ export default function TickerPage() {
       const data = await res.json();
 
       if (!data.success) {
-        throw new Error(data.error || "Analysis failed");
+        const errMsg =
+          typeof data.error === "string"
+            ? data.error
+            : JSON.stringify(data.error) || "Analysis failed";
+        throw new Error(errMsg);
       }
 
       setStageStatus([2, 2, 1]);

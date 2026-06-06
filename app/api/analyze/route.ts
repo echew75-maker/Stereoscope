@@ -89,8 +89,8 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // ── Save to cache ──
-    await supabase.from("reports").upsert(
+    // ── Save to cache (non-fatal: report still returns even if caching fails) ──
+    const { error: upsertError } = await supabase.from("reports").upsert(
       {
         ticker: normalizedTicker,
         report_data: reportData,
@@ -107,9 +107,21 @@ export async function POST(req: NextRequest) {
       data: reportData,
       cached: false,
       analysis_time_ms: Date.now() - startTime,
+      cache_warning: upsertError ? upsertError.message : undefined,
     });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Analysis failed";
+    let message: string;
+    if (err instanceof Error) {
+      message = err.message;
+    } else if (typeof err === "string") {
+      message = err;
+    } else {
+      try {
+        message = JSON.stringify(err);
+      } catch {
+        message = "Analysis failed (unserializable error)";
+      }
+    }
     return Response.json(
       { success: false, error: message },
       { status: 500 }
