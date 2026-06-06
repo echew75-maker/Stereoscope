@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
       .limit(1)
       .single();
 
-    if (cached) {
+    if (cached && cached.report_data?.price > 0) {
       return Response.json({
         success: true,
         data: cached.report_data,
