@@ -91,9 +91,58 @@ function GuruList({ gurus, color, revealed, allDone }: {
   );
 }
 
+// Wikipedia page titles for thumbnail lookup (browser-side fetch at runtime)
+const WIKI_TITLES: Record<string, string> = {
+  "Peter Lynch":   "Peter_Lynch",
+  "Philip Fisher": "Philip_Arthur_Fisher",
+  "W. O'Neil":     "William_J._O%27Neil",
+  "Bill Gurley":   "Bill_Gurley",
+  "Chuck Akre":    "Chuck_Akre",
+  "Druckenmiller": "Stanley_Druckenmiller",
+  "Howard Marks":  "Howard_Marks_(investor)",
+  "W. Buffett":    "Warren_Buffett",
+  "B. Graham":     "Benjamin_Graham",
+  "J. Chanos":     "Jim_Chanos",
+  "J. Greenblatt": "Joel_Greenblatt",
+  "M. Pabrai":     "Mohnish_Pabrai",
+  "S. Klarman":    "Seth_Klarman",
+  "H. Schilit":    "Howard_Schilit",
+};
+
 function GuruPortrait({ name, color }: { name: string; color: string }) {
-  const [imgError, setImgError] = useState(false);
   const slug = GURU_SLUGS[name] ?? name.toLowerCase().replace(/[\s.']+/g, "-").replace(/[^a-z0-9-]/g, "");
+  const [wikiUrl, setWikiUrl]       = useState<string | null>(null);
+  const [useWiki, setUseWiki]       = useState(false);
+  const [useFallback, setUseFallback] = useState(false);
+
+  // Fetch Wikipedia thumbnail in the background
+  useEffect(() => {
+    const title = WIKI_TITLES[name];
+    if (!title) return;
+    let cancelled = false;
+    fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${title}`, {
+      headers: { "User-Agent": "Stereoscope/1.0" },
+    })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        if (!cancelled && d?.thumbnail?.source) setWikiUrl(d.thumbnail.source);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [name]);
+
+  // If Wikipedia URL arrives after we already fell back, switch to it
+  useEffect(() => {
+    if (useFallback && wikiUrl) { setUseWiki(true); setUseFallback(false); }
+  }, [wikiUrl, useFallback]);
+
+  function handleImgError() {
+    if (wikiUrl) { setUseWiki(true); }
+    else         { setUseFallback(true); }
+  }
+
+  const imgSrc = useWiki ? wikiUrl! : `/gurus/${slug}.png`;
+
   return (
     <div style={{ animation: "portraitIn .45s ease", display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 14 }}>
       <div style={{
@@ -103,13 +152,13 @@ function GuruPortrait({ name, color }: { name: string; color: string }) {
         background: "#F2F0EB", position: "relative",
         boxShadow: `0 3px 14px ${color}28`,
       }}>
-        {!imgError ? (
+        {!useFallback ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={`/gurus/${slug}.png`}
+            src={imgSrc}
             alt={name}
             style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", filter: "grayscale(100%) contrast(1.3) brightness(1.05)" }}
-            onError={() => setImgError(true)}
+            onError={handleImgError}
           />
         ) : (
           <svg viewBox="0 0 88 106" width="88" height="106" style={{ display: "block" }}>
