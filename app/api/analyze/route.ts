@@ -37,6 +37,7 @@ export async function POST(req: NextRequest) {
         age_hours: Math.round(
           (Date.now() - new Date(cached.created_at).getTime()) / 3600000
         ),
+        generated_at: cached.created_at,
       });
     }
   }
@@ -115,6 +116,7 @@ export async function POST(req: NextRequest) {
       data: reportData,
       cached: false,
       analysis_time_ms: Date.now() - startTime,
+      generated_at: new Date().toISOString(),
       cache_warning: upsertError ? upsertError.message : undefined,
     });
   } catch (err: unknown) {

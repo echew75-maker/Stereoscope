@@ -7,6 +7,8 @@ import { ReportData, JournalMessage, Commitment } from "@/lib/types";
 import { parseCommitment } from "@/lib/commitment";
 import { GlossaryTerm } from "@/components/GlossaryTerm";
 import { GLOSSARY } from "@/lib/glossary";
+import { disagreementScore } from "@/lib/reportMeta";
+import Link from "next/link";
 
 // Components
 import { Masthead } from "@/components/layout/Masthead";
@@ -30,6 +32,7 @@ export default function TickerPage() {
   const [screen, setScreen] = useState<Screen>("loading");
   const [stageStatus, setStageStatus] = useState<[number, number, number]>([0, 0, 0]);
   const [reportData, setReportData] = useState<ReportData | null>(null);
+  const [generatedAt, setGeneratedAt] = useState<string | null>(null);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
   const [reportTab, setReportTab] = useState<"report" | "journal">("report");
   const [priorView, setPriorView] = useState<"bullish" | "neutral" | "bearish" | null>(null);
@@ -109,6 +112,7 @@ export default function TickerPage() {
       await new Promise((r) => setTimeout(r, 400));
 
       setReportData(data.data);
+      setGeneratedAt(data.generated_at ?? new Date().toISOString());
       setScreen("report");
       // If user recorded a prior view, seed it as the first journal message
       if (priorView) {
@@ -140,6 +144,7 @@ export default function TickerPage() {
         const data = await res.json();
         if (data.exists && data.data) {
           setReportData(data.data);
+          setGeneratedAt(data.generated_at ?? null);
           setScreen("report");
           return;
         }
@@ -443,7 +448,7 @@ export default function TickerPage() {
             paddingBottom: 60,
           }}
         >
-          <StockHeader rd={rd} />
+          <StockHeader rd={rd} generatedAt={generatedAt} />
 
           {/* No-verdict banner */}
           <div
@@ -482,14 +487,30 @@ export default function TickerPage() {
                 </GlossaryTerm>
                 .
               </b>{" "}
-              Two independent engines analysed {rd.ticker} blind to each other. Below is what
-              each found and the single question that divides them.
+              A Growth Scout and a Value Guard analysed {rd.ticker} independently — each blind
+              to the other&apos;s work — then a third engine, the Arbiter, reconciled their
+              findings without averaging them. Below is what each found and the single question
+              that divides them.{" "}
+              <Link
+                href="/methodology"
+                style={{ color: T.gold, textDecoration: "underline", fontWeight: 500 }}
+              >
+                How this works →
+              </Link>
             </p>
           </div>
 
           {/* Valuation Overlay / Arbiter */}
           <section style={{ marginTop: 30 }}>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 9, marginBottom: 12 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "baseline",
+                gap: 9,
+                marginBottom: 12,
+                flexWrap: "wrap",
+              }}
+            >
               <span
                 style={{
                   fontSize: 10.5,
@@ -509,7 +530,55 @@ export default function TickerPage() {
               >
                 Where the two lenses meet
               </h2>
+              {(() => {
+                const d = disagreementScore(rd);
+                if (!d) return null;
+                const accent =
+                  d.label === "Sharply Divided"
+                    ? T.bear
+                    : d.label === "Material Tension"
+                    ? T.gold
+                    : T.growth;
+                const tint =
+                  d.label === "Sharply Divided"
+                    ? "#FBEAE7"
+                    : d.label === "Material Tension"
+                    ? T.goldSoft
+                    : T.growthSoft;
+                return (
+                  <span
+                    title="Distance between the Growth and Value bands on the price axis. 0 = bands aligned, 100 = bands at opposite ends."
+                    style={{
+                      marginLeft: "auto",
+                      fontFamily: "'IBM Plex Mono',monospace",
+                      fontSize: 10.5,
+                      letterSpacing: ".04em",
+                      color: accent,
+                      background: tint,
+                      border: `1px solid ${accent}33`,
+                      padding: "3px 9px",
+                      borderRadius: 12,
+                      fontWeight: 600,
+                    }}
+                  >
+                    {d.label.toUpperCase()} · {d.score}/100
+                  </span>
+                );
+              })()}
             </div>
+            <p
+              style={{
+                fontSize: 12,
+                color: T.soft,
+                lineHeight: 1.55,
+                marginTop: -4,
+                marginBottom: 12,
+                maxWidth: 760,
+              }}
+            >
+              Generated independently, then reconciled — never averaged. The score above
+              measures how far apart the two lenses landed on price.
+            </p>
             <ValuationOverlay rd={rd} />
           </section>
 

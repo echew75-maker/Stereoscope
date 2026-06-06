@@ -40,5 +40,6 @@ export async function GET(
     data: data.report_data,
     age_hours: ageHours,
     expires_in_days: expiresInDays,
+    generated_at: data.created_at,
   });
 }

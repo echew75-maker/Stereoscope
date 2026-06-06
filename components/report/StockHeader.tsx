@@ -1,23 +1,60 @@
 import { tokens as T } from "@/lib/tokens";
 import { ReportData } from "@/lib/types";
+import { formatAgeFromIso } from "@/lib/reportMeta";
 
 interface Props {
   rd: ReportData;
+  generatedAt?: string | null;
 }
 
-export function StockHeader({ rd }: Props) {
+export function StockHeader({ rd, generatedAt }: Props) {
+  const ageLabel = generatedAt ? formatAgeFromIso(generatedAt) : null;
+  const filingLabel =
+    rd.filingPeriod && rd.filingDate
+      ? `${rd.filingPeriod} filing (${rd.filingDate})`
+      : rd.filingPeriod || null;
+
+  const chipParts: string[] = [];
+  if (ageLabel) chipParts.push(`Generated ${ageLabel}`);
+  if (filingLabel) chipParts.push(`Based on ${filingLabel}`);
+
   return (
     <div style={{ paddingTop: 22, animation: "fadeIn .5s ease" }}>
       <div
         style={{
-          fontSize: 11,
-          color: T.faint,
-          letterSpacing: ".06em",
-          textTransform: "uppercase",
+          display: "flex",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: 10,
           marginBottom: 10,
         }}
       >
-        {rd.sector}
+        <span
+          style={{
+            fontSize: 11,
+            color: T.faint,
+            letterSpacing: ".06em",
+            textTransform: "uppercase",
+          }}
+        >
+          {rd.sector}
+        </span>
+        {chipParts.length > 0 && (
+          <span
+            style={{
+              fontSize: 10,
+              color: T.soft,
+              fontFamily: "'IBM Plex Mono',monospace",
+              letterSpacing: ".02em",
+              padding: "2px 8px",
+              border: `1px solid ${T.line}`,
+              borderRadius: 12,
+              background: T.card,
+            }}
+          >
+            {chipParts.join("  ·  ")}
+          </span>
+        )}
       </div>
       <div
         style={{
