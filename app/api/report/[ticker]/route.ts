@@ -20,6 +20,12 @@ export async function GET(
     return Response.json({ exists: false });
   }
 
+  // Treat stale $0 reports (saved before the source-aware merge fix) as
+  // non-existent so the page falls through to a fresh analysis.
+  if (!data.report_data?.price || data.report_data.price === 0) {
+    return Response.json({ exists: false });
+  }
+
   const ageHours = Math.round(
     (Date.now() - new Date(data.created_at).getTime()) / 3600000
   );
