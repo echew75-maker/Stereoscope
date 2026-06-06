@@ -94,11 +94,6 @@ function GuruList({ gurus, color, revealed, allDone }: {
 function GuruPortrait({ name, color }: { name: string; color: string }) {
   const [imgError, setImgError] = useState(false);
   const slug = GURU_SLUGS[name] ?? name.toLowerCase().replace(/[\s.']+/g, "-").replace(/[^a-z0-9-]/g, "");
-  const parts = name.split(/[\s.]+/).filter(Boolean);
-  const initials = parts.length >= 2
-    ? parts.map((w) => w[0].toUpperCase()).join("").substring(0, 2)
-    : name.substring(0, 2).toUpperCase();
-
   return (
     <div style={{ animation: "portraitIn .45s ease", display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 14 }}>
       <div style={{
@@ -117,21 +112,72 @@ function GuruPortrait({ name, color }: { name: string; color: string }) {
             onError={() => setImgError(true)}
           />
         ) : (
-          <svg viewBox="0 0 88 106" width="88" height="106">
+          <svg viewBox="0 0 88 106" width="88" height="106" style={{ display: "block" }}>
             <defs>
-              <pattern id={`ha-${slug}`} patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(40)">
-                <line x1="0" y1="0" x2="0" y2="7" stroke={color} strokeWidth="0.7" strokeOpacity="0.22" />
+              {/* fine diagonal — general shading */}
+              <pattern id={`pf-${slug}`} patternUnits="userSpaceOnUse" width="4.5" height="4.5" patternTransform="rotate(40)">
+                <line x1="0" y1="0" x2="0" y2="4.5" stroke={color} strokeWidth="0.65" strokeOpacity="0.30" />
               </pattern>
-              <pattern id={`hb-${slug}`} patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(130)">
-                <line x1="0" y1="0" x2="0" y2="7" stroke={color} strokeWidth="0.4" strokeOpacity="0.14" />
+              {/* cross-hatch — mid-tones */}
+              <pattern id={`pc-${slug}`} patternUnits="userSpaceOnUse" width="4.5" height="4.5" patternTransform="rotate(130)">
+                <line x1="0" y1="0" x2="0" y2="4.5" stroke={color} strokeWidth="0.5" strokeOpacity="0.18" />
+              </pattern>
+              {/* dense hatch — hair / deep shadow */}
+              <pattern id={`pd-${slug}`} patternUnits="userSpaceOnUse" width="2.8" height="2.8" patternTransform="rotate(40)">
+                <line x1="0" y1="0" x2="0" y2="2.8" stroke={color} strokeWidth="0.6" strokeOpacity="0.42" />
+              </pattern>
+              {/* background grain */}
+              <pattern id={`pg-${slug}`} patternUnits="userSpaceOnUse" width="9" height="9" patternTransform="rotate(40)">
+                <line x1="0" y1="0" x2="0" y2="9" stroke={color} strokeWidth="0.4" strokeOpacity="0.09" />
               </pattern>
             </defs>
-            <rect width="88" height="106" fill="#F2F0EB" />
-            <rect width="88" height="106" fill={`url(#ha-${slug})`} />
-            <rect width="88" height="106" fill={`url(#hb-${slug})`} />
-            <text x="44" y="53" textAnchor="middle" dominantBaseline="middle"
-              fontSize="30" fontWeight="500" fill={color} fontFamily="Georgia,serif" opacity="0.75"
-            >{initials}</text>
+
+            {/* Parchment + background grain */}
+            <rect width="88" height="106" fill="#EDE9E2" />
+            <rect width="88" height="106" fill={`url(#pg-${slug})`} />
+
+            {/* Shoulders / bust */}
+            <path d="M -2,106 Q 10,82 28,70 Q 36,66 44,66 Q 52,66 60,70 Q 78,82 90,106 Z"
+              fill={`url(#pf-${slug})`} />
+            <path d="M -2,106 Q 10,82 28,70 Q 36,66 44,66 Q 52,66 60,70 Q 78,82 90,106 Z"
+              fill={`url(#pc-${slug})`} />
+
+            {/* Neck */}
+            <path d="M 38,55 L 36,68 Q 44,70 52,68 L 50,55 Z" fill={`url(#pf-${slug})`} />
+
+            {/* Head (base fill first, then shading) */}
+            <ellipse cx="44" cy="36" rx="20" ry="22" fill="#EDE9E2" />
+            <ellipse cx="44" cy="36" rx="20" ry="22" fill={`url(#pf-${slug})`} />
+
+            {/* Hair cap — denser hatching at top */}
+            <path d="M 24,31 Q 25,12 44,12 Q 63,12 64,31 Q 55,22 44,21 Q 33,22 24,31 Z"
+              fill={`url(#pd-${slug})`} />
+
+            {/* Face highlight — lighter oval centre */}
+            <ellipse cx="44" cy="38" rx="12" ry="14" fill="#F0EDE7" opacity="0.55" />
+
+            {/* Eye socket shadows */}
+            <ellipse cx="37" cy="33" rx="5.5" ry="3.5" fill={`url(#pd-${slug})`} opacity="0.45" />
+            <ellipse cx="51" cy="33" rx="5.5" ry="3.5" fill={`url(#pd-${slug})`} opacity="0.45" />
+
+            {/* Nose bridge shadow */}
+            <path d="M 42,36 Q 41,41 43,44 Q 44,45 45,44 Q 47,41 46,36 Z"
+              fill={`url(#pf-${slug})`} opacity="0.45" />
+
+            {/* Cheek / temple shadows */}
+            <ellipse cx="28" cy="40" rx="6" ry="9" fill={`url(#pf-${slug})`} opacity="0.35" />
+            <ellipse cx="60" cy="40" rx="6" ry="9" fill={`url(#pf-${slug})`} opacity="0.35" />
+
+            {/* Chin shadow */}
+            <ellipse cx="44" cy="55" rx="9" ry="3" fill={`url(#pd-${slug})`} opacity="0.35" />
+
+            {/* Outlines */}
+            <ellipse cx="44" cy="36" rx="20" ry="22"
+              fill="none" stroke={color} strokeWidth="1.4" strokeOpacity="0.6" />
+            <path d="M -2,106 Q 10,82 28,70 Q 36,66 44,66 Q 52,66 60,70 Q 78,82 90,106"
+              fill="none" stroke={color} strokeWidth="1.4" strokeOpacity="0.45" />
+            <line x1="38" y1="55" x2="36" y2="68" stroke={color} strokeWidth="0.9" strokeOpacity="0.4" />
+            <line x1="50" y1="55" x2="52" y2="68" stroke={color} strokeWidth="0.9" strokeOpacity="0.4" />
           </svg>
         )}
       </div>
