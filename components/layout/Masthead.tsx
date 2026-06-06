@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { tokens as T } from "@/lib/tokens";
 
@@ -91,6 +92,20 @@ export function Masthead() {
           </div>
         )}
       </div>
+
+      <Link
+        href="/screener"
+        style={{
+          fontSize: 12,
+          color: T.soft,
+          textDecoration: "none",
+          fontFamily: "'IBM Plex Mono',monospace",
+          letterSpacing: ".02em",
+          whiteSpace: "nowrap",
+        }}
+      >
+        Screener
+      </Link>
     </>
   );
 }
