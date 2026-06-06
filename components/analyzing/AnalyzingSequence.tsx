@@ -141,7 +141,7 @@ function GuruPortrait({ name, color }: { name: string; color: string }) {
     else         { setUseFallback(true); }
   }
 
-  const imgSrc = useWiki ? wikiUrl! : `/gurus/${slug}.png`;
+  const imgSrc = useWiki ? wikiUrl! : `/gurus/${slug}.svg`;
 
   return (
     <div style={{ animation: "portraitIn .45s ease", display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 14 }}>
