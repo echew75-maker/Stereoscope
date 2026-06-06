@@ -125,9 +125,33 @@ CRITICAL RULES:
 - All numbers must come from web search results, NOT pre-trained memory
 - Return ONLY the JSON object, nothing else`;
 
+// Escape raw control characters (newlines, tabs, CRs) that appear *inside*
+// JSON string literals. Gemini occasionally emits these unescaped when an
+// "overview"/"conclusion"/"key_assumption" string runs long, which makes
+// JSON.parse throw "Bad control character in string literal".
+function escapeControlCharsInStrings(s: string): string {
+  let out = "";
+  let inString = false;
+  let escaped = false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (escaped) { out += c; escaped = false; continue; }
+    if (c === "\\") { out += c; escaped = true; continue; }
+    if (c === '"') { out += c; inString = !inString; continue; }
+    if (inString) {
+      if (c === "\n") { out += "\\n"; continue; }
+      if (c === "\r") { out += "\\r"; continue; }
+      if (c === "\t") { out += "\\t"; continue; }
+    }
+    out += c;
+  }
+  return out;
+}
+
 function tryParse(s: string): Record<string, unknown> | null {
   try { return JSON.parse(s); } catch {}
   try { return JSON.parse(s.replace(/,\s*}/g, "}").replace(/,\s*]/g, "]")); } catch {}
+  try { return JSON.parse(escapeControlCharsInStrings(s)); } catch {}
   return null;
 }
 
