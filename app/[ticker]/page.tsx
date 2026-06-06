@@ -77,7 +77,7 @@ export default function TickerPage() {
   // Trigger analysis
   const analyzeStock = useCallback(async (force = false) => {
     setScreen("analyzing");
-    setStageStatus([1, 0, 0]);
+    setStageStatus([1, 1, 0]); // both scouts start in parallel
     setAnalyzeError(null);
 
     try {
@@ -87,7 +87,7 @@ export default function TickerPage() {
         body: JSON.stringify({ ticker, force }),
       });
 
-      setStageStatus([2, 1, 0]);
+      setStageStatus([2, 2, 1]); // both scouts done, arbiter now active
 
       const data = await res.json();
 
