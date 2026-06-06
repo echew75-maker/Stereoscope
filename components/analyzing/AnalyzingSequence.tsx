@@ -5,6 +5,10 @@ import { tokens as T } from "@/lib/tokens";
 
 type PriorView = "bullish" | "neutral" | "bearish";
 
+const GROWTH_GURUS = ["Peter Lynch", "Philip Fisher", "W. O'Neil", "Bill Gurley", "Chuck Akre", "Druckenmiller", "Howard Marks"];
+const VALUE_GURUS  = ["W. Buffett", "B. Graham", "J. Chanos", "J. Greenblatt", "M. Pabrai", "S. Klarman", "H. Schilit"];
+const GURU_INTERVAL_MS = 8500; // ~60s / 7 gurus
+
 interface Props {
   ticker: string;
   stageStatus: [number, number, number]; // 0=dim, 1=active, 2=done
@@ -14,12 +18,88 @@ interface Props {
   onPriorView?: (view: PriorView) => void;
 }
 
+function GuruList({ gurus, color, revealed, allDone }: {
+  gurus: string[];
+  color: string;
+  revealed: number;
+  allDone: boolean;
+}) {
+  return (
+    <div style={{ marginTop: 14, textAlign: "left" }}>
+      {gurus.map((name, i) => {
+        const isDone = allDone || i < revealed;
+        const isActive = !allDone && i === revealed - 1;
+        const isHidden = !allDone && i >= revealed;
+        return (
+          <div
+            key={name}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 7,
+              padding: "3px 0",
+              opacity: isHidden ? 0 : 1,
+              animation: isDone || isActive ? "fadeIn .4s ease" : "none",
+              transition: "opacity .3s",
+            }}
+          >
+            {/* Dot */}
+            <span
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: "50%",
+                flexShrink: 0,
+                background: isDone ? T.bull : isActive ? color : T.line,
+                animation: isActive ? "pulse 1.2s infinite" : "none",
+              }}
+            />
+            <span
+              style={{
+                fontSize: 11,
+                fontFamily: "'IBM Plex Mono',monospace",
+                color: isDone ? T.ink : isActive ? color : T.faint,
+                fontWeight: isActive ? 600 : 400,
+              }}
+            >
+              {name}
+            </span>
+            {isDone && !isActive && (
+              <span style={{ fontSize: 9, color: T.bull, marginLeft: "auto" }}>✓</span>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function AnalyzingSequence({ ticker, stageStatus, error, onRetry, onBack, onPriorView }: Props) {
   const [priorView, setPriorView] = useState<PriorView | null>(null);
   const [showPrimer, setShowPrimer] = useState(false);
+  const [growthReveal, setGrowthReveal] = useState(0);
+  const [valueReveal, setValueReveal] = useState(0);
 
   const arbiterActive = stageStatus[2] === 1 || stageStatus[2] === 2;
   const bothScoutsDone = stageStatus[0] === 2 && stageStatus[1] === 2;
+
+  // Reveal growth gurus one by one while scout is active
+  useEffect(() => {
+    if (stageStatus[0] === 2) { setGrowthReveal(GROWTH_GURUS.length); return; }
+    if (stageStatus[0] !== 1) return;
+    setGrowthReveal(1);
+    const id = setInterval(() => setGrowthReveal(r => Math.min(r + 1, GROWTH_GURUS.length)), GURU_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [stageStatus[0]]);
+
+  // Reveal value gurus one by one while scout is active
+  useEffect(() => {
+    if (stageStatus[1] === 2) { setValueReveal(VALUE_GURUS.length); return; }
+    if (stageStatus[1] !== 1) return;
+    setValueReveal(1);
+    const id = setInterval(() => setValueReveal(r => Math.min(r + 1, VALUE_GURUS.length)), GURU_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [stageStatus[1]]);
 
   // Primer appears after 3 seconds — enough time for the animation to register
   useEffect(() => {
@@ -105,6 +185,15 @@ export function AnalyzingSequence({ ticker, stageStatus, error, onRetry, onBack,
                 transition: "width 12s linear",
               }} />
             </div>
+
+            {growthReveal > 0 && (
+              <GuruList
+                gurus={GROWTH_GURUS}
+                color={T.growth}
+                revealed={growthReveal}
+                allDone={stageStatus[0] === 2}
+              />
+            )}
 
             {/* Facing indicator */}
             <div
@@ -201,6 +290,15 @@ export function AnalyzingSequence({ ticker, stageStatus, error, onRetry, onBack,
                 transition: "width 12s linear",
               }} />
             </div>
+
+            {valueReveal > 0 && (
+              <GuruList
+                gurus={VALUE_GURUS}
+                color={T.value}
+                revealed={valueReveal}
+                allDone={stageStatus[1] === 2}
+              />
+            )}
 
             {/* Facing indicator */}
             <div
