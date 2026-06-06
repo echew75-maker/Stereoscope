@@ -602,7 +602,7 @@ export function AnalyzingSequence({ ticker, stageStatus, error, onRetry, onBack,
                   ))}
                 </div>
                 <p style={{ fontSize: 10.5, color: T.faint, marginTop: 12 }}>
-                  Your answer is recorded before the report — so your prior isn&apos;t anchored by what the analysis finds.
+                  Lock in your baseline view before the data reveals the real story.
                 </p>
               </>
             ) : (
