@@ -9,6 +9,23 @@ const GROWTH_GURUS = ["Peter Lynch", "Philip Fisher", "W. O'Neil", "Bill Gurley"
 const VALUE_GURUS  = ["W. Buffett", "B. Graham", "J. Chanos", "J. Greenblatt", "M. Pabrai", "S. Klarman", "H. Schilit"];
 const GURU_INTERVAL_MS = 8500; // ~60s / 7 gurus
 
+const GURU_SLUGS: Record<string, string> = {
+  "Peter Lynch":   "peter-lynch",
+  "Philip Fisher": "philip-fisher",
+  "W. O'Neil":     "w-oneil",
+  "Bill Gurley":   "bill-gurley",
+  "Chuck Akre":    "chuck-akre",
+  "Druckenmiller": "druckenmiller",
+  "Howard Marks":  "howard-marks",
+  "W. Buffett":    "warren-buffett",
+  "B. Graham":     "benjamin-graham",
+  "J. Chanos":     "jim-chanos",
+  "J. Greenblatt": "joel-greenblatt",
+  "M. Pabrai":     "mohnish-pabrai",
+  "S. Klarman":    "seth-klarman",
+  "H. Schilit":    "howard-schilit",
+};
+
 interface Props {
   ticker: string;
   stageStatus: [number, number, number]; // 0=dim, 1=active, 2=done
@@ -70,6 +87,58 @@ function GuruList({ gurus, color, revealed, allDone }: {
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function GuruPortrait({ name, color }: { name: string; color: string }) {
+  const [imgError, setImgError] = useState(false);
+  const slug = GURU_SLUGS[name] ?? name.toLowerCase().replace(/[\s.']+/g, "-").replace(/[^a-z0-9-]/g, "");
+  const parts = name.split(/[\s.]+/).filter(Boolean);
+  const initials = parts.length >= 2
+    ? parts.map((w) => w[0].toUpperCase()).join("").substring(0, 2)
+    : name.substring(0, 2).toUpperCase();
+
+  return (
+    <div style={{ animation: "portraitIn .45s ease", display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 14 }}>
+      <div style={{
+        width: 88, height: 106,
+        border: `2px solid ${color}`,
+        borderRadius: 8, overflow: "hidden",
+        background: "#F2F0EB", position: "relative",
+        boxShadow: `0 3px 14px ${color}28`,
+      }}>
+        {!imgError ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={`/gurus/${slug}.png`}
+            alt={name}
+            style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", filter: "grayscale(100%) contrast(1.3) brightness(1.05)" }}
+            onError={() => setImgError(true)}
+          />
+        ) : (
+          <svg viewBox="0 0 88 106" width="88" height="106">
+            <defs>
+              <pattern id={`ha-${slug}`} patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(40)">
+                <line x1="0" y1="0" x2="0" y2="7" stroke={color} strokeWidth="0.7" strokeOpacity="0.22" />
+              </pattern>
+              <pattern id={`hb-${slug}`} patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate(130)">
+                <line x1="0" y1="0" x2="0" y2="7" stroke={color} strokeWidth="0.4" strokeOpacity="0.14" />
+              </pattern>
+            </defs>
+            <rect width="88" height="106" fill="#F2F0EB" />
+            <rect width="88" height="106" fill={`url(#ha-${slug})`} />
+            <rect width="88" height="106" fill={`url(#hb-${slug})`} />
+            <text x="44" y="53" textAnchor="middle" dominantBaseline="middle"
+              fontSize="30" fontWeight="500" fill={color} fontFamily="Georgia,serif" opacity="0.75"
+            >{initials}</text>
+          </svg>
+        )}
+      </div>
+      <div style={{ fontSize: 9.5, color, fontFamily: "'IBM Plex Mono',monospace", marginTop: 5, letterSpacing: ".06em", fontWeight: 600, textTransform: "uppercase" }}>
+        {name}
+      </div>
+      <div style={{ fontSize: 9, color: "#939699", marginTop: 1 }}>applying lens</div>
     </div>
   );
 }
@@ -169,7 +238,20 @@ export function AnalyzingSequence({ ticker, stageStatus, error, onRetry, onBack,
               opacity: stageStatus[0] === 0 ? 0.4 : 1,
             }}
           >
-            <div style={{ fontSize: 28, color: T.growth, marginBottom: 10 }}>◇</div>
+            <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", position: "relative", marginBottom: 10 }}>
+              {stageStatus[0] === 1 && (
+                <div style={{
+                  position: "absolute",
+                  inset: -10,
+                  borderRadius: "50%",
+                  border: "2px solid transparent",
+                  borderTopColor: T.growth,
+                  borderRightColor: `${T.growth}55`,
+                  animation: "spin 1.1s linear infinite",
+                }} />
+              )}
+              <div style={{ fontSize: 28, color: stageStatus[0] === 2 ? T.bull : T.growth }}>◇</div>
+            </div>
             <div style={{ fontWeight: 600, fontSize: 13, color: T.ink, marginBottom: 4 }}>Growth Scout</div>
             <div style={{ fontSize: 11, color: T.growth, fontFamily: "'IBM Plex Mono',monospace", marginBottom: 12 }}>
               {stageStatus[0] === 2 ? "✓ Complete" : stageStatus[0] === 1 ? "Researching filings…" : "Waiting…"}
@@ -186,6 +268,15 @@ export function AnalyzingSequence({ ticker, stageStatus, error, onRetry, onBack,
               }} />
             </div>
 
+            {stageStatus[0] === 1 && growthReveal > 0 && (
+              <div style={{ textAlign: "center", marginTop: 12 }}>
+                <GuruPortrait
+                  key={GROWTH_GURUS[growthReveal - 1]}
+                  name={GROWTH_GURUS[growthReveal - 1]}
+                  color={T.growth}
+                />
+              </div>
+            )}
             {growthReveal > 0 && (
               <GuruList
                 gurus={GROWTH_GURUS}
@@ -275,7 +366,20 @@ export function AnalyzingSequence({ ticker, stageStatus, error, onRetry, onBack,
               opacity: stageStatus[1] === 0 ? 0.4 : 1,
             }}
           >
-            <div style={{ fontSize: 28, color: T.value, marginBottom: 10 }}>◆</div>
+            <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", position: "relative", marginBottom: 10 }}>
+              {stageStatus[1] === 1 && (
+                <div style={{
+                  position: "absolute",
+                  inset: -10,
+                  borderRadius: "50%",
+                  border: "2px solid transparent",
+                  borderTopColor: T.value,
+                  borderRightColor: `${T.value}55`,
+                  animation: "spin 1.1s linear infinite",
+                }} />
+              )}
+              <div style={{ fontSize: 28, color: stageStatus[1] === 2 ? T.bull : T.value }}>◆</div>
+            </div>
             <div style={{ fontWeight: 600, fontSize: 13, color: T.ink, marginBottom: 4 }}>Value Guard</div>
             <div style={{ fontSize: 11, color: T.value, fontFamily: "'IBM Plex Mono',monospace", marginBottom: 12 }}>
               {stageStatus[1] === 2 ? "✓ Complete" : stageStatus[1] === 1 ? "Forensic audit…" : "Waiting…"}
@@ -291,6 +395,15 @@ export function AnalyzingSequence({ ticker, stageStatus, error, onRetry, onBack,
               }} />
             </div>
 
+            {stageStatus[1] === 1 && valueReveal > 0 && (
+              <div style={{ textAlign: "center", marginTop: 12 }}>
+                <GuruPortrait
+                  key={VALUE_GURUS[valueReveal - 1]}
+                  name={VALUE_GURUS[valueReveal - 1]}
+                  color={T.value}
+                />
+              </div>
+            )}
             {valueReveal > 0 && (
               <GuruList
                 gurus={VALUE_GURUS}
