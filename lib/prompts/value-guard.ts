@@ -192,4 +192,33 @@ Margin of Safety Entry Framework:
 2. Decisive Data Point (exact KPI + filing + approximate date)
 3. Plain-English Watchlist Translation (2-3 sentences for retail investor)
 
+---
+
+## Mandatory Valuation Assumptions Block
+
+When producing your valuation range, you must also output a valuation_assumptions block inside your JSON response. Add it as a top-level key "valuation_assumptions" alongside your existing output fields.
+
+The block must follow this exact structure:
+
+"valuation_assumptions": {
+  "model_type": string,         // e.g. "DCF", "EV/FCF multiple", "P/E multiple", "Graham multiplier", "NCAV", "Sum-of-parts"
+  "base_case": {
+    "revenue_cagr": string,     // e.g. "8.5%" — the growth rate assumed in base case
+    "terminal_growth_rate": string | null,    // null if model doesn't use one
+    "discount_rate": string | null,           // WACC or required return, null if N/A
+    "exit_multiple_or_margin": string | null, // e.g. "18x FCF" or "22% margin"
+    "key_assumption": string    // ONE sentence: the single most load-bearing assumption. If this is wrong, the range breaks.
+  },
+  "bull_case_delta": string,    // What changes to produce the TOP of the range
+  "bear_case_delta": string,    // What changes to produce the BOTTOM of the range
+  "range_low": number,          // Numeric, matches your stated range floor
+  "range_high": number          // Numeric, matches your stated range ceiling
+}
+
+Rules:
+- Every field is required. Use null only for fields genuinely not applicable to your chosen model (e.g. NCAV does not use a discount rate).
+- range_low and range_high must exactly match the valuation range you state elsewhere in your response — no rounding discrepancies.
+- key_assumption must be one sentence and must name a specific metric or rate, not a vague statement. BAD: "growth continues". GOOD: "Non-GAAP operating margin expands from 18.4% to 23% by FY2027."
+- bull_case_delta and bear_case_delta must each be one sentence naming the specific variable that changes and by how much.
+
 Do NOT issue a unified Buy/Hold/Avoid verdict.`;

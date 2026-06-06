@@ -1,6 +1,7 @@
 import { tokens as T } from "@/lib/tokens";
 import { ReportData } from "@/lib/types";
 import { GlossaryText } from "@/lib/highlightGlossaryTerms";
+import { ValuationRange } from "@/components/ValuationRange";
 
 interface Props {
   rd: ReportData;
@@ -169,6 +170,23 @@ export function ValuationOverlay({ rd }: Props) {
           {rd.overlapNote}
         </div>
       )}
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 11, marginTop: 18 }}>
+        <ValuationRange
+          label="Growth Scout"
+          rangeLow={rd.growthAssumptions?.range_low ?? 0}
+          rangeHigh={rd.growthAssumptions?.range_high ?? 0}
+          currentPrice={rd.price}
+          assumptions={rd.growthAssumptions}
+        />
+        <ValuationRange
+          label="Value Guard"
+          rangeLow={rd.valueAssumptions?.range_low ?? 0}
+          rangeHigh={rd.valueAssumptions?.range_high ?? 0}
+          currentPrice={rd.price}
+          assumptions={rd.valueAssumptions}
+        />
+      </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 11, marginTop: 18 }}>
         <div

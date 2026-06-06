@@ -1,3 +1,18 @@
+export interface ValuationAssumptions {
+  model_type: string;
+  base_case: {
+    revenue_cagr: string;
+    terminal_growth_rate: string | null;
+    discount_rate: string | null;
+    exit_multiple_or_margin: string | null;
+    key_assumption: string;
+  };
+  bull_case_delta: string;
+  bear_case_delta: string;
+  range_low: number;
+  range_high: number;
+}
+
 export interface ReportData {
   name: string;
   ticker: string;
@@ -39,6 +54,8 @@ export interface ReportData {
   catalysts: Catalyst[];
   triggers: Trigger[];
   sources: string;
+  growthAssumptions: ValuationAssumptions | null;
+  valueAssumptions: ValuationAssumptions | null;
 }
 
 export interface Stat {

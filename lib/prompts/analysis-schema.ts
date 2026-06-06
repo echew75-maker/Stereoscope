@@ -1,4 +1,4 @@
-import { ReportData } from "@/lib/types";
+import { ReportData, ValuationAssumptions } from "@/lib/types";
 
 export const ANALYSIS_SCHEMA_PROMPT = `After completing your analysis, you MUST output the JSON object wrapped in <json> and </json> tags, exactly like this:
 
@@ -98,7 +98,21 @@ No other text after the closing </json> tag. No markdown. No backticks. The sche
     {"n":2,"title":"Trigger name","tag":"Growth","tagColor":"value","desc":"2 sentences...","cur":"$4.5B","curC":"bull","trig":"−10% QoQ","extra":null},
     {"n":3,"title":"Trigger name","tag":"Dilution","tagColor":"warn","desc":"2 sentences...","cur":"$807M","curC":"neutral","trig":"$1.0B","extra":"⚠ WITHIN 20%"}
   ],
-  "sources": "2-3 sentences listing all sources with filing dates and URLs."
+  "sources": "2-3 sentences listing all sources with filing dates and URLs.",
+  "valuation_assumptions": {
+    "model_type": "DCF",
+    "base_case": {
+      "revenue_cagr": "8.5%",
+      "terminal_growth_rate": "2.5%",
+      "discount_rate": "9.0%",
+      "exit_multiple_or_margin": "22% FCF margin",
+      "key_assumption": "Non-GAAP operating margin expands from 18.4% to 23% by FY2027."
+    },
+    "bull_case_delta": "Revenue CAGR steps up to 12% on faster enterprise adoption.",
+    "bear_case_delta": "Discount rate widens to 11% as risk-free rate stays elevated.",
+    "range_low": 145,
+    "range_high": 215
+  }
 }
 
 CRITICAL RULES:
@@ -159,6 +173,58 @@ export function extractReportJSON(text: string): Record<string, unknown> | null 
   return null;
 }
 
+function validateAssumptions(
+  raw: unknown,
+  lens: "Growth Scout" | "Value Guard",
+  ticker: string
+): ValuationAssumptions | null {
+  if (!raw || typeof raw !== "object") {
+    console.warn(
+      `[Stereoscope] valuation_assumptions missing or invalid for ${lens} on ticker ${ticker}`
+    );
+    return null;
+  }
+  const a = raw as Record<string, unknown>;
+  const base = a.base_case as Record<string, unknown> | undefined;
+  const ok =
+    typeof a.model_type === "string" &&
+    base !== undefined &&
+    typeof base === "object" &&
+    typeof base.revenue_cagr === "string" &&
+    typeof base.key_assumption === "string" &&
+    typeof a.bull_case_delta === "string" &&
+    typeof a.bear_case_delta === "string" &&
+    typeof a.range_low === "number" &&
+    typeof a.range_high === "number";
+
+  if (!ok) {
+    console.warn(
+      `[Stereoscope] valuation_assumptions missing or invalid for ${lens} on ticker ${ticker}`
+    );
+    return null;
+  }
+
+  return {
+    model_type: a.model_type as string,
+    base_case: {
+      revenue_cagr: base.revenue_cagr as string,
+      terminal_growth_rate:
+        typeof base.terminal_growth_rate === "string" ? base.terminal_growth_rate : null,
+      discount_rate:
+        typeof base.discount_rate === "string" ? base.discount_rate : null,
+      exit_multiple_or_margin:
+        typeof base.exit_multiple_or_margin === "string"
+          ? base.exit_multiple_or_margin
+          : null,
+      key_assumption: base.key_assumption as string,
+    },
+    bull_case_delta: a.bull_case_delta as string,
+    bear_case_delta: a.bear_case_delta as string,
+    range_low: a.range_low as number,
+    range_high: a.range_high as number,
+  };
+}
+
 export function parseReportJSON(
   growthRaw: string,
   valueRaw: string,
@@ -170,6 +236,20 @@ export function parseReportJSON(
   const growth = extractJSON(growthRaw) || {};
   const value  = extractJSON(valueRaw)  || {};
   const arbiter = extractJSON(arbiterRaw) || {};
+
+  // Per-lens assumptions: Growth Scout owns growthAssumptions, Value Guard owns
+  // valueAssumptions. Validate each independently; missing/malformed → null so
+  // the UI renders the fallback line instead of crashing.
+  const growthAssumptions = validateAssumptions(
+    growth.valuation_assumptions,
+    "Growth Scout",
+    ticker
+  );
+  const valueAssumptions = validateAssumptions(
+    value.valuation_assumptions,
+    "Value Guard",
+    ticker
+  );
 
   // Helpers
   type GA = ReportData["growthGurus"];   type VA = ReportData["valueGurus"];
@@ -238,6 +318,10 @@ export function parseReportJSON(
     catalysts: firstArr<CA[number]>(arbiter.catalysts, growth.catalysts, value.catalysts),
     triggers:  firstArr<TA[number]>(arbiter.triggers, growth.triggers, value.triggers),
     sources:   first<string>(arbiter.sources as string, growth.sources as string, value.sources as string) ?? "",
+
+    // ── Per-lens valuation assumptions ──
+    growthAssumptions,
+    valueAssumptions,
   };
 
   return result;
