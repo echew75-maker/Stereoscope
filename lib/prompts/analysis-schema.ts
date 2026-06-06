@@ -168,59 +168,76 @@ export function parseReportJSON(
   const extractJSON = extractReportJSON;
 
   const growth = extractJSON(growthRaw) || {};
-  const value = extractJSON(valueRaw) || {};
+  const value  = extractJSON(valueRaw)  || {};
   const arbiter = extractJSON(arbiterRaw) || {};
 
-  // Merge all three outputs into final ReportData
-  // Priority: arbiter synthesis > value > growth for shared fields
-  const merged = {
-    ...growth,
-    ...value,
-    ...arbiter,
-  } as Record<string, unknown>;
+  // Helpers
+  type GA = ReportData["growthGurus"];   type VA = ReportData["valueGurus"];
+  type SA = ReportData["stats"];         type MA = ReportData["growthMetrics"];
+  type VMA = ReportData["valueMetrics"]; type PA = ReportData["premortemSteps"];
+  type CA = ReportData["catalysts"];     type TA = ReportData["triggers"];
 
-  // Ensure required fields
+  // first<T>: return first truthy value from candidate list
+  function first<T>(...vals: (T | null | undefined)[]): T | undefined {
+    return vals.find((v) => v !== null && v !== undefined && v !== 0 && v !== "") as T | undefined;
+  }
+  // firstArr<T>: return first non-empty array
+  function firstArr<T>(a: unknown, b: unknown, c: unknown): T[] {
+    const pick = (x: unknown) => (Array.isArray(x) && x.length > 0 ? x as T[] : null);
+    return pick(a) ?? pick(b) ?? pick(c) ?? [];
+  }
+
+  // SOURCE RULES
+  // Scouts (Growth + Value) own: price, basic identifiers, filing data, gurus, metrics.
+  //   The Arbiter does NOT search the web and reliably outputs price=0 — do not let it
+  //   override scout prices.
+  // Arbiter owns: synthesis fields (crux, valuation bands, premortem, catalysts, triggers).
+
   const result: ReportData = {
-    name: (merged.name as string) || ticker,
-    ticker: (merged.ticker as string) || ticker,
-    exchange: (merged.exchange as string) || "",
-    sector: (merged.sector as string) || "",
-    price: (merged.price as number) || 0,
-    chg: (merged.chg as string) || "",
-    range: (merged.range as string) || "",
-    asof: (merged.asof as string) || new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }),
-    currency: (merged.currency as string) || "USD · Millions",
-    filingPeriod: (merged.filingPeriod as string) || "",
-    filingDate: (merged.filingDate as string) || "",
-    nextFiling: (merged.nextFiling as string) || "~90 days",
-    stats: (merged.stats as ReportData["stats"]) || [],
-    growthGurus: (merged.growthGurus as ReportData["growthGurus"]) || [],
-    valueGurus: (merged.valueGurus as ReportData["valueGurus"]) || [],
-    growthMetrics: (merged.growthMetrics as ReportData["growthMetrics"]) || [],
-    valueMetrics: (merged.valueMetrics as ReportData["valueMetrics"]) || [],
-    valueBandLabel: (merged.valueBandLabel as string) || "Value",
-    valueBandLeft: (merged.valueBandLeft as string) || "20%",
-    valueBandWidth: (merged.valueBandWidth as string) || "15%",
-    growthBandLabel: (merged.growthBandLabel as string) || "Growth",
-    growthBandLeft: (merged.growthBandLeft as string) || "70%",
-    growthBandWidth: (merged.growthBandWidth as string) || "15%",
-    markerLeft: (merged.markerLeft as string) || "50%",
-    overlapType: (merged.overlapType as ReportData["overlapType"]) || "disjoint",
-    overlapNote: (merged.overlapNote as string) || "",
-    crux: (merged.crux as string) || "",
-    cruxGrowth: (merged.cruxGrowth as string) || "",
-    cruxValue: (merged.cruxValue as string) || "",
-    payingForTitle: (merged.payingForTitle as string) || "",
-    payingForDesc: (merged.payingForDesc as string) || "",
-    decisiveDate: (merged.decisiveDate as string) || "",
-    decisiveText: (merged.decisiveText as string) || "",
-    premortemPrice: (merged.premortemPrice as string) || "",
-    premortemQuote: (merged.premortemQuote as string) || "",
-    premortemSteps: (merged.premortemSteps as ReportData["premortemSteps"]) || [],
-    premortemCoda: (merged.premortemCoda as string) || "",
-    catalysts: (merged.catalysts as ReportData["catalysts"]) || [],
-    triggers: (merged.triggers as ReportData["triggers"]) || [],
-    sources: (merged.sources as string) || "",
+    // ── Scout-owned: prefer Growth → Value → Arbiter ──
+    name:         first<string>(growth.name as string, value.name as string, arbiter.name as string) ?? ticker,
+    ticker:       first<string>(growth.ticker as string, value.ticker as string, arbiter.ticker as string) ?? ticker,
+    exchange:     first<string>(growth.exchange as string, value.exchange as string, arbiter.exchange as string) ?? "",
+    sector:       first<string>(growth.sector as string, value.sector as string, arbiter.sector as string) ?? "",
+    price:        first<number>(growth.price as number, value.price as number, arbiter.price as number) ?? 0,
+    chg:          first<string>(growth.chg as string, value.chg as string, arbiter.chg as string) ?? "",
+    range:        first<string>(growth.range as string, value.range as string, arbiter.range as string) ?? "",
+    asof:         first<string>(growth.asof as string, value.asof as string, arbiter.asof as string)
+                    ?? new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }),
+    currency:     first<string>(growth.currency as string, value.currency as string, arbiter.currency as string) ?? "USD · Millions",
+    filingPeriod: first<string>(growth.filingPeriod as string, value.filingPeriod as string, arbiter.filingPeriod as string) ?? "",
+    filingDate:   first<string>(growth.filingDate as string, value.filingDate as string, arbiter.filingDate as string) ?? "",
+    nextFiling:   first<string>(growth.nextFiling as string, value.nextFiling as string, arbiter.nextFiling as string) ?? "~90 days",
+    stats:        firstArr<SA[number]>(growth.stats, value.stats, arbiter.stats),
+    growthGurus:  firstArr<GA[number]>(growth.growthGurus, arbiter.growthGurus, value.growthGurus),
+    valueGurus:   firstArr<VA[number]>(value.valueGurus, arbiter.valueGurus, growth.valueGurus),
+    growthMetrics: firstArr<MA[number]>(growth.growthMetrics, arbiter.growthMetrics, value.growthMetrics),
+    valueMetrics:  firstArr<VMA[number]>(value.valueMetrics, arbiter.valueMetrics, growth.valueMetrics),
+
+    // ── Arbiter-owned: prefer Arbiter → fallback to scouts ──
+    valueBandLabel: first<string>(arbiter.valueBandLabel as string, value.valueBandLabel as string, growth.valueBandLabel as string) ?? "Value",
+    valueBandLeft:  first<string>(arbiter.valueBandLeft as string, value.valueBandLeft as string, growth.valueBandLeft as string) ?? "20%",
+    valueBandWidth: first<string>(arbiter.valueBandWidth as string, value.valueBandWidth as string, growth.valueBandWidth as string) ?? "15%",
+    growthBandLabel: first<string>(arbiter.growthBandLabel as string, growth.growthBandLabel as string, value.growthBandLabel as string) ?? "Growth",
+    growthBandLeft:  first<string>(arbiter.growthBandLeft as string, growth.growthBandLeft as string, value.growthBandLeft as string) ?? "70%",
+    growthBandWidth: first<string>(arbiter.growthBandWidth as string, growth.growthBandWidth as string, value.growthBandWidth as string) ?? "15%",
+    markerLeft:   first<string>(arbiter.markerLeft as string, growth.markerLeft as string, value.markerLeft as string) ?? "50%",
+    overlapType:  (arbiter.overlapType ?? growth.overlapType ?? value.overlapType ?? "disjoint") as ReportData["overlapType"],
+    overlapNote:  first<string>(arbiter.overlapNote as string, growth.overlapNote as string, value.overlapNote as string) ?? "",
+    crux:         first<string>(arbiter.crux as string, growth.crux as string, value.crux as string) ?? "",
+    cruxGrowth:   first<string>(arbiter.cruxGrowth as string, growth.cruxGrowth as string) ?? "",
+    cruxValue:    first<string>(arbiter.cruxValue as string, value.cruxValue as string) ?? "",
+    payingForTitle: first<string>(arbiter.payingForTitle as string, growth.payingForTitle as string, value.payingForTitle as string) ?? "",
+    payingForDesc:  first<string>(arbiter.payingForDesc as string, growth.payingForDesc as string, value.payingForDesc as string) ?? "",
+    decisiveDate:   first<string>(arbiter.decisiveDate as string, growth.decisiveDate as string, value.decisiveDate as string) ?? "",
+    decisiveText:   first<string>(arbiter.decisiveText as string, growth.decisiveText as string, value.decisiveText as string) ?? "",
+    premortemPrice: first<string>(arbiter.premortemPrice as string, growth.premortemPrice as string, value.premortemPrice as string) ?? "",
+    premortemQuote: first<string>(arbiter.premortemQuote as string, growth.premortemQuote as string, value.premortemQuote as string) ?? "",
+    premortemSteps: firstArr<PA[number]>(arbiter.premortemSteps, growth.premortemSteps, value.premortemSteps),
+    premortemCoda:  first<string>(arbiter.premortemCoda as string, growth.premortemCoda as string, value.premortemCoda as string) ?? "",
+    catalysts: firstArr<CA[number]>(arbiter.catalysts, growth.catalysts, value.catalysts),
+    triggers:  firstArr<TA[number]>(arbiter.triggers, growth.triggers, value.triggers),
+    sources:   first<string>(arbiter.sources as string, growth.sources as string, value.sources as string) ?? "",
   };
 
   return result;
