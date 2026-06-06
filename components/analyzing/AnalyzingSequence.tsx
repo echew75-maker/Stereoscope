@@ -304,9 +304,17 @@ export function AnalyzingSequence({ ticker, stageStatus, error, onRetry, onBack,
             {ticker}
           </span>
         </h1>
-        <p style={{ fontSize: 13, color: T.soft, maxWidth: 440, margin: "0 auto 36px" }}>
+        <p style={{ fontSize: 13, color: T.soft, maxWidth: 440, margin: "0 auto 16px" }}>
           Two engines, run blind. One synthesis.
         </p>
+        <div style={{ maxWidth: 520, margin: "0 auto 36px", textAlign: "center" }}>
+          <p style={{ fontSize: 12, fontWeight: 600, color: T.ink, marginBottom: 6, letterSpacing: ".02em" }}>
+            Independence eliminates echo chambers.
+          </p>
+          <p style={{ fontSize: 12, color: T.soft, lineHeight: 1.65 }}>
+            Both engines reach their conclusions alone — blind to each other. Most tools think once and dress it up twice. Ours synthesises two genuinely separate views, so when they agree, it&apos;s for a reason — not by accident.
+          </p>
+        </div>
 
         {/* ── TWO ROOMS ── */}
         <div
