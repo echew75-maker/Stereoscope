@@ -111,57 +111,61 @@ CRITICAL RULES:
 - All numbers must come from web search results, NOT pre-trained memory
 - Return ONLY the JSON object, nothing else`;
 
+function tryParse(s: string): Record<string, unknown> | null {
+  try { return JSON.parse(s); } catch {}
+  try { return JSON.parse(s.replace(/,\s*}/g, "}").replace(/,\s*]/g, "]")); } catch {}
+  return null;
+}
+
+// Extracts the report JSON object from a raw Gemini response. Prefers the
+// <json>...</json> delimiter, then falls back to direct parse and bracket scan.
+export function extractReportJSON(text: string): Record<string, unknown> | null {
+  // Primary: extract between <json> ... </json> delimiters
+  const tagged = text.match(/<json>([\s\S]*?)<\/json>/i);
+  if (tagged) {
+    const r = tryParse(tagged[1].trim());
+    if (r) return r;
+  }
+
+  // Fallback: direct parse after stripping markdown fences
+  const cleaned = text.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
+  const direct = tryParse(cleaned);
+  if (direct) return direct;
+
+  // Fallback: scan all { positions last-to-first, prefer objects with schema keys
+  const starts: number[] = [];
+  for (let i = 0; i < cleaned.length; i++) {
+    if (cleaned[i] === "{") starts.push(i);
+  }
+
+  const bracketExtract = (start: number): Record<string, unknown> | null => {
+    let depth = 0;
+    for (let i = start; i < cleaned.length; i++) {
+      if (cleaned[i] === "{") depth++;
+      if (cleaned[i] === "}") { depth--; if (depth === 0) return tryParse(cleaned.substring(start, i + 1)); }
+    }
+    return null;
+  };
+
+  for (let i = starts.length - 1; i >= 0; i--) {
+    const r = bracketExtract(starts[i]);
+    if (r && ("name" in r || "price" in r)) return r;
+  }
+  for (let i = starts.length - 1; i >= 0; i--) {
+    const r = bracketExtract(starts[i]);
+    if (r) return r;
+  }
+
+  return null;
+}
+
 export function parseReportJSON(
   growthRaw: string,
   valueRaw: string,
   arbiterRaw: string,
   ticker: string
 ): ReportData {
-  const tryParse = (s: string): Record<string, unknown> | null => {
-    try { return JSON.parse(s); } catch {}
-    try { return JSON.parse(s.replace(/,\s*}/g, "}").replace(/,\s*]/g, "]")); } catch {}
-    return null;
-  };
-
-  const extractJSON = (text: string): Record<string, unknown> | null => {
-    // Primary: extract between <json> ... </json> delimiters
-    const tagged = text.match(/<json>([\s\S]*?)<\/json>/i);
-    if (tagged) {
-      const r = tryParse(tagged[1].trim());
-      if (r) return r;
-    }
-
-    // Fallback: direct parse after stripping markdown fences
-    const cleaned = text.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
-    const direct = tryParse(cleaned);
-    if (direct) return direct;
-
-    // Fallback: scan all { positions last-to-first, prefer objects with schema keys
-    const starts: number[] = [];
-    for (let i = 0; i < cleaned.length; i++) {
-      if (cleaned[i] === "{") starts.push(i);
-    }
-
-    const bracketExtract = (start: number): Record<string, unknown> | null => {
-      let depth = 0;
-      for (let i = start; i < cleaned.length; i++) {
-        if (cleaned[i] === "{") depth++;
-        if (cleaned[i] === "}") { depth--; if (depth === 0) return tryParse(cleaned.substring(start, i + 1)); }
-      }
-      return null;
-    };
-
-    for (let i = starts.length - 1; i >= 0; i--) {
-      const r = bracketExtract(starts[i]);
-      if (r && ("name" in r || "price" in r)) return r;
-    }
-    for (let i = starts.length - 1; i >= 0; i--) {
-      const r = bracketExtract(starts[i]);
-      if (r) return r;
-    }
-
-    return null;
-  };
+  const extractJSON = extractReportJSON;
 
   const growth = extractJSON(growthRaw) || {};
   const value = extractJSON(valueRaw) || {};

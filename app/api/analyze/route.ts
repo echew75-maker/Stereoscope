@@ -2,7 +2,7 @@ import { callGemini } from "@/lib/gemini";
 import { GROWTH_SCOUT_PROMPT } from "@/lib/prompts/growth-scout";
 import { VALUE_GUARD_PROMPT } from "@/lib/prompts/value-guard";
 import { ARBITER_PROMPT } from "@/lib/prompts/arbiter";
-import { ANALYSIS_SCHEMA_PROMPT, parseReportJSON } from "@/lib/prompts/analysis-schema";
+import { ANALYSIS_SCHEMA_PROMPT, parseReportJSON, extractReportJSON } from "@/lib/prompts/analysis-schema";
 import { createServerClient } from "@/lib/supabase/server";
 import { NextRequest } from "next/server";
 
@@ -60,11 +60,19 @@ export async function POST(req: NextRequest) {
     ]);
 
     // ── STAGE 3: Arbiter (uses both outputs above) ──
+    // Feed the Arbiter the scouts' compact extracted JSON rather than their full
+    // raw scratchpad text. This shrinks the Arbiter's input ~5x (much faster start)
+    // with no loss of scout conclusions. Falls back to raw text if extraction fails.
+    const growthJSON = extractReportJSON(growthRaw);
+    const valueJSON = extractReportJSON(valueRaw);
+    const growthForArbiter = growthJSON ? JSON.stringify(growthJSON) : growthRaw;
+    const valueForArbiter = valueJSON ? JSON.stringify(valueJSON) : valueRaw;
+
     const arbiterRaw = await callGemini(
       ARBITER_PROMPT +
         "\n\n---\n\nOUTPUT FORMAT INSTRUCTIONS:\n" +
         schemaInstructions,
-      `Here is the Growth Scout report for ${normalizedTicker}:\n\n${growthRaw}\n\nHere is the Value Guard report for ${normalizedTicker}:\n\n${valueRaw}\n\nProduce the Arbiter synthesis: factual reconciliation, valuation overlay with band positions, the Crux, the decisive data point, the Munger pre-mortem, 3 catalysts, 3 invalidation triggers, and the "what you're paying for" conditional. Return as the structured JSON object specified.`,
+      `Here is the Growth Scout report for ${normalizedTicker} (structured findings):\n\n${growthForArbiter}\n\nHere is the Value Guard report for ${normalizedTicker} (structured findings):\n\n${valueForArbiter}\n\nProduce the Arbiter synthesis: factual reconciliation, valuation overlay with band positions, the Crux, the decisive data point, the Munger pre-mortem, 3 catalysts, 3 invalidation triggers, and the "what you're paying for" conditional. Return as the structured JSON object specified.`,
       false
     );
 
