@@ -1,4 +1,4 @@
-import { ReportData, ValuationAssumptions } from "@/lib/types";
+import { ReportData, ValuationAssumptions, GaapVsNonGaap } from "@/lib/types";
 
 export const ANALYSIS_SCHEMA_PROMPT = `After completing your analysis, you MUST output the JSON object wrapped in <json> and </json> tags, exactly like this:
 
@@ -112,6 +112,13 @@ No other text after the closing </json> tag. No markdown. No backticks. The sche
     "bear_case_delta": "Discount rate widens to 11% as risk-free rate stays elevated.",
     "range_low": 145,
     "range_high": 215
+  },
+  "gaap_vs_non_gaap": {
+    "gaap_eps": "-0.22",
+    "non_gaap_eps": "0.85",
+    "delta_pct": 486,
+    "sbc_pct_revenue": 18.5,
+    "explainer": "The $1.07 gap between GAAP and non-GAAP EPS is almost entirely stock-based compensation — real dilution paid in shares rather than cash. SBC of ~18.5% of revenue is high; per-share economics look very different through a GAAP lens."
   }
 }
 
@@ -123,6 +130,8 @@ CRITICAL RULES:
 - Premortem assumes a 50% price decline over 5 years and builds a specific, plausible narrative with actual financial figures
 - Band positions: calculate left% and width% to place bands on a 0-100% axis where 0% = $0 and 100% = 1.5× the highest target price. markerLeft places current price on same axis.
 - All numbers must come from web search results, NOT pre-trained memory
+- "gaap_vs_non_gaap" is the Value Guard's responsibility. Include this block ONLY when the gap is material: either |non_gaap_eps − gaap_eps| / |gaap_eps| > 0.20 (i.e. delta_pct > 20) OR sbc_pct_revenue > 10. If both conditions are false (typical of mature profitable companies where the gap is cosmetic), omit the "gaap_vs_non_gaap" field entirely — do not emit it as null or with placeholder zeros. The Growth Scout should never emit this block; if it does it will be ignored.
+- "explainer" must be 2-3 plain-English sentences a retail investor can follow. Name the specific cause (stock-based compensation, restructuring charges, one-time tax items) and quantify what it means per share.
 - Return ONLY the JSON object, nothing else`;
 
 // Escape raw control characters (newlines, tabs, CRs) that appear *inside*
@@ -249,6 +258,29 @@ function validateAssumptions(
   };
 }
 
+function validateGaapVsNonGaap(raw: unknown): GaapVsNonGaap | null {
+  if (!raw || typeof raw !== "object") return null;
+  const g = raw as Record<string, unknown>;
+  const ok =
+    (typeof g.gaap_eps === "string" || typeof g.gaap_eps === "number") &&
+    (typeof g.non_gaap_eps === "string" || typeof g.non_gaap_eps === "number") &&
+    typeof g.delta_pct === "number" &&
+    typeof g.sbc_pct_revenue === "number" &&
+    typeof g.explainer === "string" &&
+    g.explainer.trim().length > 0;
+  if (!ok) return null;
+  // Re-apply the materiality gate defensively in case the model emitted the
+  // block even when the gap is cosmetic.
+  if ((g.delta_pct as number) <= 20 && (g.sbc_pct_revenue as number) <= 10) return null;
+  return {
+    gaap_eps: String(g.gaap_eps),
+    non_gaap_eps: String(g.non_gaap_eps),
+    delta_pct: g.delta_pct as number,
+    sbc_pct_revenue: g.sbc_pct_revenue as number,
+    explainer: g.explainer as string,
+  };
+}
+
 export function parseReportJSON(
   growthRaw: string,
   valueRaw: string,
@@ -274,6 +306,11 @@ export function parseReportJSON(
     "Value Guard",
     ticker
   );
+
+  // GAAP-vs-non-GAAP block is Value Guard's responsibility. Returns null when
+  // either the model omitted the block (gap was cosmetic) or the materiality
+  // gate isn't met when the validator re-checks it.
+  const gaapVsNonGaap = validateGaapVsNonGaap(value.gaap_vs_non_gaap);
 
   // Helpers
   type GA = ReportData["growthGurus"];   type VA = ReportData["valueGurus"];
@@ -346,6 +383,7 @@ export function parseReportJSON(
     // ── Per-lens valuation assumptions ──
     growthAssumptions,
     valueAssumptions,
+    gaapVsNonGaap,
   };
 
   return result;

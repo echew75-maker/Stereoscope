@@ -47,7 +47,7 @@ For each of the 7 gurus, populate the corresponding entry in the JSON's "valueGu
 
 - **Warren Buffett:** Moat score (1-10), moat category (switching costs / network effects / cost leadership / intangibles). Multi-year ROIC and ROE trend. Pricing power via gross margin trend.
 - **Benjamin Graham:** Per-share NCAV vs market price. Graham Multiplier vs 22.5 threshold. Conservative margin of safety.
-- **Jim Chanos:** Cash-flow divergence (OCF / Net Income, flag if < 1.0×). Cash-only quality of earnings. Per-share dilution tax. DSO expansion check.
+- **Jim Chanos:** Cash-flow divergence (OCF / Net Income, flag if < 1.0×). Cash-only quality of earnings. Per-share dilution tax. DSO expansion check. Also reconcile GAAP vs Non-GAAP EPS for the most recent quarter and populate the "gaap_vs_non_gaap" block per the rule below.
 - **Joel Greenblatt:** Earnings Yield, ROC, vs industry benchmark AND 10Y Treasury.
 - **Mohnish Pabrai:** Spawner framework, Net Cash / share, Dhandho risk grade.
 - **Seth Klarman:** Self-Funding Runway in years (cash & ST investments + zero-growth OCF) / annualised opex. Liquidity option valuation. Genuine discount vs value trap call.
@@ -93,5 +93,33 @@ Rules:
 - key_assumption: ONE sentence naming a specific metric AND a specific number (percentage, dollar amount, multiple, or ratio). Qualitative words like "significantly", "moderately", "high" are forbidden — use the actual number. BAD: "downside protected" or "growth significantly decelerates". GOOD: "Tangible book value per share holds at ≥$9.20 through FY2027" or "Revenue CAGR slows from 30% to under 5% by FY2028".
 - bull_case_delta and bear_case_delta: ONE sentence each, naming the specific variable that changes and by how much.
 - Use null only for fields genuinely not applicable to your chosen model (e.g. NCAV does not use a discount rate).
+
+---
+
+## Conditional GAAP-vs-Non-GAAP Block
+
+A top-level "gaap_vs_non_gaap" key is REQUIRED only when the accounting gap is material. Materiality gate:
+
+  Include the block if EITHER:
+    (a) |non_gaap_eps − gaap_eps| / |gaap_eps| > 0.20  (delta_pct > 20)
+    (b) Stock-based compensation > 10% of quarterly revenue  (sbc_pct_revenue > 10)
+  Otherwise OMIT the field entirely (do not emit null or zeros). Mature profitable companies with cosmetic gaps should produce no block.
+
+Shape when included:
+
+"gaap_vs_non_gaap": {
+  "gaap_eps": "-0.22",            // most recent quarter GAAP diluted EPS as a string
+  "non_gaap_eps": "0.85",         // most recent quarter Non-GAAP / Adjusted diluted EPS as a string
+  "delta_pct": 486,                // |non_gaap − gaap| / |gaap| × 100, rounded to integer
+  "sbc_pct_revenue": 18.5,         // quarterly SBC ÷ quarterly revenue × 100, one decimal
+  "explainer": "2-3 plain-English sentences naming the specific reconciling item (SBC, restructuring, one-time tax) and what it means per share."
+}
+
+Rules:
+- explainer must name the specific cause and quantify per-share impact.
+- Do not include the block on companies where the gap is cosmetic, even if you have the numbers.
+- Same period for all three of gaap_eps, non_gaap_eps, sbc_pct_revenue — most recent reported quarter.
+
+---
 
 Do NOT issue a unified Buy/Hold/Avoid verdict. Reason internally, then emit the JSON.`;

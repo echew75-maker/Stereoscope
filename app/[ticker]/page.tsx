@@ -607,7 +607,12 @@ export default function TickerPage() {
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
               <GuruPanel type="growth" gurus={rd.growthGurus} metrics={rd.growthMetrics} />
-              <GuruPanel type="value" gurus={rd.valueGurus} metrics={rd.valueMetrics} />
+              <GuruPanel
+                type="value"
+                gurus={rd.valueGurus}
+                metrics={rd.valueMetrics}
+                gaapVsNonGaap={rd.gaapVsNonGaap}
+              />
             </div>
           </section>
 

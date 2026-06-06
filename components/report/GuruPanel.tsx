@@ -1,15 +1,17 @@
 import { GuruRow } from "./GuruRow";
 import { MetricGrid } from "./MetricGrid";
+import { GaapVsNonGaap } from "./GaapVsNonGaap";
 import { tokens as T } from "@/lib/tokens";
-import { Guru, Metric } from "@/lib/types";
+import { Guru, Metric, GaapVsNonGaap as GaapVsNonGaapType } from "@/lib/types";
 
 interface Props {
   type: "growth" | "value";
   gurus: Guru[];
   metrics: Metric[];
+  gaapVsNonGaap?: GaapVsNonGaapType | null;
 }
 
-export function GuruPanel({ type, gurus, metrics }: Props) {
+export function GuruPanel({ type, gurus, metrics, gaapVsNonGaap }: Props) {
   const isGrowth = type === "growth";
   const color = isGrowth ? T.growth : T.value;
   const bg = isGrowth ? T.growthSoft : T.valueSoft;
@@ -69,6 +71,7 @@ export function GuruPanel({ type, gurus, metrics }: Props) {
         }}
       >
         <MetricGrid metrics={metrics} />
+        {!isGrowth && gaapVsNonGaap && <GaapVsNonGaap data={gaapVsNonGaap} />}
       </div>
     </div>
   );

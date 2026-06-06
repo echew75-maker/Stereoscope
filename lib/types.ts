@@ -1,3 +1,11 @@
+export interface GaapVsNonGaap {
+  gaap_eps: string;
+  non_gaap_eps: string;
+  delta_pct: number;
+  sbc_pct_revenue: number;
+  explainer: string;
+}
+
 export interface ValuationAssumptions {
   model_type: string;
   base_case: {
@@ -56,6 +64,7 @@ export interface ReportData {
   sources: string;
   growthAssumptions: ValuationAssumptions | null;
   valueAssumptions: ValuationAssumptions | null;
+  gaapVsNonGaap: GaapVsNonGaap | null;
 }
 
 export interface Stat {

@@ -117,7 +117,7 @@ const valueGurus: GuruEntry[] = [
     whatItChecks:
       "Whether the reported earnings are real cash earnings or accounting artefacts.",
     whereYouSeeIt:
-      "Value Guard lens 3. Surfaces as the Quality of Earnings ratio and the dilution-tax breakdown.",
+      "Value Guard lens 3. Surfaces as the Quality of Earnings ratio and the dilution-tax breakdown. Also drives the dedicated GAAP-vs-Non-GAAP card that appears in the Value panel when the gap is material (delta > 20% or SBC > 10% of revenue).",
   },
   {
     name: "Joel Greenblatt",
