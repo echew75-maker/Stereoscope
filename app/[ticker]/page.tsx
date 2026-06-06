@@ -30,6 +30,7 @@ export default function TickerPage() {
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
   const [reportTab, setReportTab] = useState<"report" | "journal">("report");
+  const [priorView, setPriorView] = useState<"bullish" | "neutral" | "bearish" | null>(null);
 
   // Journal state
   const [msgs, setMsgs] = useState<JournalMessage[]>([]);
@@ -107,6 +108,21 @@ export default function TickerPage() {
 
       setReportData(data.data);
       setScreen("report");
+      // If user recorded a prior view, seed it as the first journal message
+      if (priorView) {
+        const priorMsg: JournalMessage = {
+          id: "prior-" + Date.now(),
+          role: "user",
+          content: `Before reading this report, my instinct on ${ticker} was ${priorView.toUpperCase()}.`,
+          ts: Date.now(),
+        };
+        const existing = loadLocal<JournalMessage[]>(`stereo:${ticker}:msgs`, []);
+        if (existing.length === 0) {
+          const seeded = [priorMsg];
+          setMsgs(seeded);
+          saveLocal(`stereo:${ticker}:msgs`, seeded);
+        }
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Analysis failed";
       setAnalyzeError(`Analysis failed: ${message}. Please retry.`);
@@ -310,6 +326,10 @@ export default function TickerPage() {
           error={analyzeError}
           onRetry={analyzeStock}
           onBack={() => router.push("/")}
+          onPriorView={(v) => {
+            setPriorView(v);
+            saveLocal(`stereo:${ticker}:prior`, v);
+          }}
         />
       </>
     );
