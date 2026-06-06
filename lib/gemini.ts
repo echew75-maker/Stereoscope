@@ -11,7 +11,7 @@ export async function callGemini(
     contents: [{ role: "user", parts: [{ text: userMessage }] }],
     generation_config: {
       temperature: 0.2,
-      max_output_tokens: 12288,
+      max_output_tokens: 16384,
     },
   };
 
