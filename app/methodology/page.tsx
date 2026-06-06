@@ -351,7 +351,7 @@ export default function MethodologyPage() {
             maxWidth: 700,
           }}
         >
-          Stereoscope runs three Gemini-powered engines on every ticker. Two of them analyse
+          Stereoscope runs three AI engines on every ticker. Two of them analyse
           the company independently — blind to each other&apos;s output — and the third
           reconciles their findings without averaging them. This page documents what each
           engine does, which seven investor frameworks each scout reasons through, and what
@@ -547,12 +547,18 @@ export default function MethodologyPage() {
             borderTop: `1px solid ${T.line}`,
             fontSize: 11,
             color: T.faint,
+            lineHeight: 1.6,
           }}
         >
-          Last reviewed for accuracy alongside Growth Scout v2.0 and Value Guard v3.0
-          prompts. If you see a guru lens described here that doesn&apos;t show up in your
-          report, the model may have skipped or merged it under the dilution rules — let us
-          know.
+          <div>
+            Last reviewed for accuracy alongside Growth Scout v2.0 and Value Guard v3.0
+            prompts. If you see a guru lens described here that doesn&apos;t show up in your
+            report, the model may have skipped or merged it under the dilution rules — let
+            us know.
+          </div>
+          <div style={{ marginTop: 8 }}>
+            Currently powered by Google Gemini 2.5 Flash with web search grounding.
+          </div>
         </div>
       </main>
     </>
