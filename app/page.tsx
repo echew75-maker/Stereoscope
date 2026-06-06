@@ -1,23 +1,91 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { tokens as T } from "@/lib/tokens";
 import { Footer } from "@/components/layout/Footer";
 
+interface SearchResult { symbol: string; name: string; exchange: string }
+
 export default function LandingPage() {
   const [heroInput, setHeroInput] = useState("");
   const [heroErr, setHeroErr] = useState(false);
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [highlighted, setHighlighted] = useState(0);
+  const [searching, setSearching] = useState(false);
   const router = useRouter();
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Debounced ticker / company-name search
+  useEffect(() => {
+    const q = heroInput.trim();
+    if (q.length < 1) { setResults([]); return; }
+    setSearching(true);
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/ticker-search?q=${encodeURIComponent(q)}`);
+        const data = await res.json();
+        setResults(data.results || []);
+        setHighlighted(0);
+      } catch {
+        setResults([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 220);
+    return () => clearTimeout(t);
+  }, [heroInput]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function onClick(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
+
+  function go(symbol: string) {
+    setShowDropdown(false);
+    setHeroErr(false);
+    router.push(`/${symbol.toUpperCase()}`);
+  }
 
   function handleSearch(val: string) {
     const t = val.trim().toUpperCase();
+    // If user picked from dropdown (or typed a clean ticker), use that
     if (t.length >= 1 && t.length <= 6 && /^[A-Z]+$/.test(t)) {
-      setHeroErr(false);
-      router.push(`/${t}`);
-    } else if (t.length > 0) {
-      setHeroErr(true);
-      setTimeout(() => setHeroErr(false), 3000);
+      go(t);
+      return;
+    }
+    // Otherwise, jump to the first search result if we have one
+    if (results.length > 0) {
+      go(results[0].symbol);
+      return;
+    }
+    setHeroErr(true);
+    setTimeout(() => setHeroErr(false), 3000);
+  }
+
+  function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (!showDropdown || results.length === 0) {
+      if (e.key === "Enter") handleSearch(heroInput);
+      return;
+    }
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHighlighted((h) => Math.min(h + 1, results.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlighted((h) => Math.max(h - 1, 0));
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      go(results[highlighted].symbol);
+    } else if (e.key === "Escape") {
+      setShowDropdown(false);
     }
   }
 
@@ -104,18 +172,18 @@ export default function LandingPage() {
             other. You see both perspectives and the single question that divides them.
           </p>
 
-          <div style={{ maxWidth: 480, margin: "0 auto", position: "relative" }}>
+          <div ref={dropdownRef} style={{ maxWidth: 480, margin: "0 auto", position: "relative" }}>
             <input
               value={heroInput}
-              onChange={(e) => setHeroInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleSearch(heroInput);
-              }}
-              placeholder="Enter any ticker (e.g. AAPL, MSFT, PLTR)"
+              onChange={(e) => { setHeroInput(e.target.value); setShowDropdown(true); }}
+              onFocus={() => setShowDropdown(true)}
+              onKeyDown={onKeyDown}
+              placeholder="Search by ticker or company name (e.g. AAPL, Apple)"
+              autoComplete="off"
               style={{
                 width: "100%",
-                fontFamily: "'IBM Plex Mono',monospace",
-                fontSize: 17,
+                fontFamily: "'IBM Plex Sans',sans-serif",
+                fontSize: 16,
                 padding: "16px 54px 16px 20px",
                 background: T.card,
                 border: `1.5px solid ${heroErr ? T.bear : T.line}`,
@@ -123,8 +191,7 @@ export default function LandingPage() {
                 color: T.ink,
                 outline: "none",
                 boxShadow: T.shadow,
-                textTransform: "uppercase",
-                letterSpacing: ".03em",
+                letterSpacing: ".01em",
                 transition: "all .2s",
               }}
             />
@@ -149,14 +216,67 @@ export default function LandingPage() {
             >
               →
             </button>
+
+            {showDropdown && heroInput.trim().length > 0 && (results.length > 0 || searching) && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "calc(100% + 6px)",
+                  left: 0,
+                  right: 0,
+                  background: T.card,
+                  border: `1px solid ${T.line}`,
+                  borderRadius: 11,
+                  boxShadow: "0 12px 32px rgba(20,20,20,.10)",
+                  zIndex: 50,
+                  overflow: "hidden",
+                  textAlign: "left",
+                }}
+              >
+                {results.length === 0 && searching && (
+                  <div style={{ padding: "11px 14px", fontSize: 12, color: T.faint, fontFamily: "'IBM Plex Mono',monospace" }}>
+                    Searching…
+                  </div>
+                )}
+                {results.map((r, i) => (
+                  <div
+                    key={r.symbol}
+                    onMouseDown={(e) => { e.preventDefault(); go(r.symbol); }}
+                    onMouseEnter={() => setHighlighted(i)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "10px 14px",
+                      cursor: "pointer",
+                      background: i === highlighted ? T.bg : "transparent",
+                      borderTop: i === 0 ? "none" : `1px solid ${T.lineSoft}`,
+                    }}
+                  >
+                    <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+                      <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontWeight: 600, fontSize: 13, color: T.ink }}>
+                        {r.symbol}
+                      </span>
+                      <span style={{ fontSize: 12, color: T.soft, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {r.name}
+                      </span>
+                    </div>
+                    <span style={{ fontSize: 10, color: T.faint, fontFamily: "'IBM Plex Mono',monospace", marginLeft: 12, flexShrink: 0 }}>
+                      {r.exchange}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {heroErr && (
               <div style={{ marginTop: 8, fontSize: 12.5, color: T.bear }}>
-                Enter a valid ticker (1–6 letters, e.g. AAPL)
+                No results — try a different ticker or company name.
               </div>
             )}
           </div>
           <div style={{ marginTop: 22, fontSize: 11.5, color: T.faint }}>
-            Enter any publicly traded US stock ticker. Analysis takes 60–120 seconds.
+            Search by ticker or company name. Analysis takes 60–120 seconds.
           </div>
         </section>
 

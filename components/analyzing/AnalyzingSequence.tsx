@@ -9,6 +9,33 @@ const GROWTH_GURUS = ["Peter Lynch", "Philip Fisher", "W. O'Neil", "Bill Gurley"
 const VALUE_GURUS  = ["W. Buffett", "B. Graham", "J. Chanos", "J. Greenblatt", "M. Pabrai", "S. Klarman", "H. Schilit"];
 const GURU_INTERVAL_MS = 8500; // ~60s / 7 gurus
 
+// Step-by-step status phases shown beneath each engine's label while it's
+// active. Rotated on a timer so the user sees progress instead of one static
+// "Researching..." line for 60-120s.
+const GROWTH_PHASES = [
+  "Fetching latest 10-Q…",
+  "Pulling revenue & NDR…",
+  "Mapping EPS acceleration…",
+  "Computing Rule of 40…",
+  "Applying guru lenses…",
+  "Drafting conclusions…",
+];
+const VALUE_PHASES = [
+  "Fetching 10-Q & balance sheet…",
+  "Auditing share count & SBC…",
+  "Mapping debt & warrants…",
+  "Computing NCAV & FCF quality…",
+  "Applying guru lenses…",
+  "Drafting conclusions…",
+];
+const ARBITER_PHASES = [
+  "Reconciling shared facts…",
+  "Overlaying valuation bands…",
+  "Finding the Crux…",
+  "Drafting the conditional…",
+];
+const PHASE_INTERVAL_MS = 11000;
+
 const GURU_SLUGS: Record<string, string> = {
   "Peter Lynch":   "peter-lynch",
   "Philip Fisher": "philip-fisher",
@@ -265,6 +292,33 @@ export function AnalyzingSequence({ ticker, stageStatus, error, onRetry, onBack,
     return () => clearInterval(id);
   }, [stageStatus[1]]);
 
+  // Rotate phase labels while each engine is active. Each phase visible for
+  // PHASE_INTERVAL_MS, last phase sticks until the stage flips to "done".
+  const [growthPhase, setGrowthPhase] = useState(0);
+  const [valuePhase, setValuePhase]   = useState(0);
+  const [arbiterPhase, setArbiterPhase] = useState(0);
+
+  useEffect(() => {
+    if (stageStatus[0] !== 1) return;
+    setGrowthPhase(0);
+    const id = setInterval(() => setGrowthPhase(p => Math.min(p + 1, GROWTH_PHASES.length - 1)), PHASE_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [stageStatus[0]]);
+
+  useEffect(() => {
+    if (stageStatus[1] !== 1) return;
+    setValuePhase(0);
+    const id = setInterval(() => setValuePhase(p => Math.min(p + 1, VALUE_PHASES.length - 1)), PHASE_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [stageStatus[1]]);
+
+  useEffect(() => {
+    if (stageStatus[2] !== 1) return;
+    setArbiterPhase(0);
+    const id = setInterval(() => setArbiterPhase(p => Math.min(p + 1, ARBITER_PHASES.length - 1)), PHASE_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [stageStatus[2]]);
+
   // Primer appears after 3 seconds — enough time for the animation to register
   useEffect(() => {
     const t = setTimeout(() => setShowPrimer(true), 3000);
@@ -357,7 +411,11 @@ export function AnalyzingSequence({ ticker, stageStatus, error, onRetry, onBack,
             </div>
             <div style={{ fontWeight: 600, fontSize: 13, color: T.ink, marginBottom: 4 }}>Growth Scout</div>
             <div style={{ fontSize: 11, color: T.growth, fontFamily: "'IBM Plex Mono',monospace", marginBottom: 12 }}>
-              {stageStatus[0] === 2 ? "✓ Complete" : stageStatus[0] === 1 ? "Researching filings…" : "Waiting…"}
+              {stageStatus[0] === 2
+                ? "✓ Complete"
+                : stageStatus[0] === 1
+                  ? `${GROWTH_PHASES[growthPhase]}  ·  step ${growthPhase + 1}/${GROWTH_PHASES.length}`
+                  : "Waiting…"}
             </div>
 
             {/* Progress bar */}
@@ -429,7 +487,9 @@ export function AnalyzingSequence({ ticker, stageStatus, error, onRetry, onBack,
                 <div style={{ fontSize: 26, color: T.gold, marginBottom: 8 }}>◎</div>
                 <div style={{ fontWeight: 600, fontSize: 13, color: T.ink, marginBottom: 4, whiteSpace: "nowrap" }}>The Arbiter</div>
                 <div style={{ fontSize: 11, color: T.gold, fontFamily: "'IBM Plex Mono',monospace", whiteSpace: "nowrap" }}>
-                  {stageStatus[2] === 2 ? "✓ Complete" : "Finding the Crux…"}
+                  {stageStatus[2] === 2
+                    ? "✓ Complete"
+                    : `${ARBITER_PHASES[arbiterPhase]}  ·  ${arbiterPhase + 1}/${ARBITER_PHASES.length}`}
                 </div>
                 <div style={{ marginTop: 12, height: 2, width: "80%", background: T.lineSoft, borderRadius: 2, overflow: "hidden" }}>
                   <div style={{
@@ -485,7 +545,11 @@ export function AnalyzingSequence({ ticker, stageStatus, error, onRetry, onBack,
             </div>
             <div style={{ fontWeight: 600, fontSize: 13, color: T.ink, marginBottom: 4 }}>Value Guard</div>
             <div style={{ fontSize: 11, color: T.value, fontFamily: "'IBM Plex Mono',monospace", marginBottom: 12 }}>
-              {stageStatus[1] === 2 ? "✓ Complete" : stageStatus[1] === 1 ? "Forensic audit…" : "Waiting…"}
+              {stageStatus[1] === 2
+                ? "✓ Complete"
+                : stageStatus[1] === 1
+                  ? `${VALUE_PHASES[valuePhase]}  ·  step ${valuePhase + 1}/${VALUE_PHASES.length}`
+                  : "Waiting…"}
             </div>
 
             <div style={{ height: 2, background: T.lineSoft, borderRadius: 2, overflow: "hidden" }}>
