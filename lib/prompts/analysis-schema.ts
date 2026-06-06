@@ -285,7 +285,8 @@ export function parseReportJSON(
   growthRaw: string,
   valueRaw: string,
   arbiterRaw: string,
-  ticker: string
+  ticker: string,
+  livePrice?: number
 ): ReportData {
   const extractJSON = extractReportJSON;
 
@@ -346,7 +347,7 @@ export function parseReportJSON(
     ticker:       first<string>(growth.ticker as string, value.ticker as string, arbiter.ticker as string) ?? ticker,
     exchange:     first<string>(growth.exchange as string, value.exchange as string, arbiter.exchange as string) ?? "",
     sector:       first<string>(growth.sector as string, value.sector as string, arbiter.sector as string) ?? "",
-    price:        first<number>(growth.price as number, value.price as number, arbiter.price as number) ?? 0,
+    price:        livePrice ?? (first<number>(growth.price as number, value.price as number, arbiter.price as number) ?? 0),
     chg:          first<string>(growth.chg as string, value.chg as string, arbiter.chg as string) ?? "",
     range:        first<string>(growth.range as string, value.range as string, arbiter.range as string) ?? "",
     asof:         first<string>(growth.asof as string, value.asof as string, arbiter.asof as string)

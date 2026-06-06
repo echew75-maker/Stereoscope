@@ -3,6 +3,7 @@ import { GROWTH_SCOUT_PROMPT } from "@/lib/prompts/growth-scout";
 import { VALUE_GUARD_PROMPT } from "@/lib/prompts/value-guard";
 import { ARBITER_PROMPT } from "@/lib/prompts/arbiter";
 import { ANALYSIS_SCHEMA_PROMPT, parseReportJSON, extractReportJSON } from "@/lib/prompts/analysis-schema";
+import { fetchLivePrice, priceContext } from "@/lib/finnhub";
 import { createServerClient } from "@/lib/supabase/server";
 import { NextRequest } from "next/server";
 
@@ -46,8 +47,13 @@ export async function POST(req: NextRequest) {
     const startTime = Date.now();
     const schemaInstructions = ANALYSIS_SCHEMA_PROMPT;
 
-    const growthUserMsg = `Analyze the stock ${normalizedTicker}. Search the web for its most recent quarterly filing (10-Q or equivalent), current stock price, revenue growth, NDR, RPO, EPS history, institutional ownership, and analyst targets. Produce the complete Growth Scout Phase 1 scratchpad and Phase 2 guru analysis. Then return the structured JSON object as specified.`;
-    const valueUserMsg = `Analyze the stock ${normalizedTicker}. Search the web for its most recent quarterly filing (10-Q or equivalent), balance sheet, cash flow statement, share count, SBC, debt, warrant liabilities, and analyst targets. Produce the complete Value Guard Phase 1 scratchpad and Phase 2 guru analysis. Then return the structured JSON object as specified.`;
+    // ── Fetch live price from Finnhub before analysis ──
+    // Non-fatal: if key is missing or call fails, Gemini extracts price from web.
+    const livePrice = await fetchLivePrice(normalizedTicker);
+    const priceHint = priceContext(normalizedTicker, livePrice);
+
+    const growthUserMsg = `Analyze the stock ${normalizedTicker}.${priceHint} Search the web for its most recent quarterly filing (10-Q or equivalent), current stock price, revenue growth, NDR, RPO, EPS history, institutional ownership, and analyst targets. Produce the complete Growth Scout Phase 1 scratchpad and Phase 2 guru analysis. Then return the structured JSON object as specified.`;
+    const valueUserMsg = `Analyze the stock ${normalizedTicker}.${priceHint} Search the web for its most recent quarterly filing (10-Q or equivalent), balance sheet, cash flow statement, share count, SBC, debt, warrant liabilities, and analyst targets. Produce the complete Value Guard Phase 1 scratchpad and Phase 2 guru analysis. Then return the structured JSON object as specified.`;
     const growthSystem = GROWTH_SCOUT_PROMPT + "\n\n---\n\nOUTPUT FORMAT INSTRUCTIONS:\n" + schemaInstructions;
     const valueSystem = VALUE_GUARD_PROMPT + "\n\n---\n\nOUTPUT FORMAT INSTRUCTIONS:\n" + schemaInstructions;
 
@@ -96,7 +102,7 @@ export async function POST(req: NextRequest) {
     );
 
     // ── Merge into final ReportData ──
-    const reportData = parseReportJSON(growthRaw, valueRaw, arbiterRaw, normalizedTicker);
+    const reportData = parseReportJSON(growthRaw, valueRaw, arbiterRaw, normalizedTicker, livePrice ?? undefined);
 
     // Debug: if price is still 0, return raw snippets so we can diagnose
     if (!reportData.price || reportData.price === 0) {
