@@ -14,21 +14,21 @@ export interface Database {
           id: string;
           email: string | null;
           display_name: string | null;
-          tier: "free" | "analyst" | "portfolio_manager";
+          tier: "free" | "researcher" | "pro";
           created_at: string;
         };
         Insert: {
           id: string;
           email?: string | null;
           display_name?: string | null;
-          tier?: "free" | "analyst" | "portfolio_manager";
+          tier?: "free" | "researcher" | "pro";
           created_at?: string;
         };
         Update: {
           id?: string;
           email?: string | null;
           display_name?: string | null;
-          tier?: "free" | "analyst" | "portfolio_manager";
+          tier?: "free" | "researcher" | "pro";
           created_at?: string;
         };
       };

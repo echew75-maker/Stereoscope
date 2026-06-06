@@ -1,14 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { tokens as T } from "@/lib/tokens";
+import { createClient } from "@/lib/supabase/client";
 
 export function Masthead() {
   const [v, setV] = useState("");
   const [err, setErr] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    supabase.auth.getUser().then(({ data }) => {
+      setUserEmail(data.user?.email ?? null);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_, session) => {
+      setUserEmail(session?.user?.email ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   function handleSearch() {
     const t = v.trim().toUpperCase();
@@ -106,6 +124,62 @@ export function Masthead() {
       >
         Screener
       </Link>
+
+      {userEmail ? (
+        <Link
+          href="/account"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            textDecoration: "none",
+            flexShrink: 0,
+          }}
+        >
+          <span
+            style={{
+              width: 24,
+              height: 24,
+              borderRadius: "50%",
+              background: T.goldSoft,
+              border: `1px solid ${T.goldLine}`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 11,
+              fontWeight: 700,
+              color: T.gold,
+              flexShrink: 0,
+            }}
+          >
+            {userEmail.charAt(0).toUpperCase()}
+          </span>
+          <span
+            style={{
+              fontSize: 12,
+              color: T.soft,
+              fontFamily: "'IBM Plex Mono',monospace",
+              letterSpacing: ".02em",
+            }}
+          >
+            Account
+          </span>
+        </Link>
+      ) : (
+        <Link
+          href="/auth/login"
+          style={{
+            fontSize: 12,
+            color: T.soft,
+            textDecoration: "none",
+            fontFamily: "'IBM Plex Mono',monospace",
+            letterSpacing: ".02em",
+            whiteSpace: "nowrap",
+          }}
+        >
+          Sign in
+        </Link>
+      )}
     </>
   );
 }

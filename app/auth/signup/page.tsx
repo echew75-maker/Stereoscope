@@ -1,41 +1,111 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import { useState, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { tokens as T } from "@/lib/tokens";
 
-function LoginForm() {
+export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [confirmed, setConfirmed] = useState(false);
   const supabase = createClient();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const next = searchParams.get("next") || "/";
 
-  async function handleLogin(e: React.FormEvent) {
+  async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({
+    const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
     });
 
-    if (signInError) {
-      setError(signInError.message);
+    if (signUpError) {
+      setError(signUpError.message);
       setLoading(false);
-    } else {
-      router.push(next);
+    } else if (data.session) {
+      // Email confirmation disabled — immediately logged in
+      router.push("/");
       router.refresh();
+    } else {
+      // Email confirmation required
+      setConfirmed(true);
     }
   }
 
-  const ready = email.length > 0 && password.length >= 8 && !loading;
+  const passwordStrong = password.length >= 8;
+  const ready = email.length > 0 && passwordStrong && !loading;
+
+  if (confirmed) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          background: T.bg,
+          fontFamily: "'IBM Plex Sans',-apple-system,sans-serif",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "20px",
+        }}
+      >
+        <div
+          style={{
+            maxWidth: 400,
+            width: "100%",
+            background: T.card,
+            border: `1px solid ${T.line}`,
+            borderRadius: 14,
+            padding: "32px 28px",
+            boxShadow: T.shadow,
+          }}
+        >
+          <div
+            style={{
+              fontFamily: "'Fraunces',serif",
+              fontWeight: 600,
+              fontSize: 22,
+              letterSpacing: ".01em",
+              marginBottom: 16,
+            }}
+          >
+            STEREO<span style={{ color: T.gold }}>SCOPE</span>
+          </div>
+          <div
+            style={{
+              padding: "14px 16px",
+              background: T.growthSoft,
+              border: `1px solid ${T.growthLine}`,
+              borderRadius: 8,
+              fontSize: 13.5,
+              color: T.growth,
+              lineHeight: 1.5,
+            }}
+          >
+            Check your email for a confirmation link. Once confirmed, you can
+            sign in.
+          </div>
+          <p style={{ fontSize: 12, color: T.soft, marginTop: 16 }}>
+            Already confirmed?{" "}
+            <Link
+              href="/auth/login"
+              style={{ color: T.gold, textDecoration: "none" }}
+            >
+              Sign in
+            </Link>
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -72,10 +142,10 @@ function LoginForm() {
           STEREO<span style={{ color: T.gold }}>SCOPE</span>
         </div>
         <p style={{ fontSize: 13.5, color: T.soft, marginBottom: 24 }}>
-          Sign in to your account.
+          Create your free account. 5 analyses/month, no credit card.
         </p>
 
-        <form onSubmit={handleLogin}>
+        <form onSubmit={handleSignup}>
           <label
             style={{
               fontSize: 12,
@@ -113,7 +183,8 @@ function LoginForm() {
               marginBottom: 5,
             }}
           >
-            Password
+            Password{" "}
+            <span style={{ color: T.faint }}>(8+ characters)</span>
           </label>
           <input
             type="password"
@@ -124,15 +195,28 @@ function LoginForm() {
             style={{
               width: "100%",
               padding: "10px 12px",
-              border: `1px solid ${T.line}`,
+              border: `1px solid ${password.length > 0 && !passwordStrong ? T.bear : T.line}`,
               borderRadius: 8,
               fontSize: 13.5,
-              marginBottom: 16,
+              marginBottom: password.length > 0 && !passwordStrong ? 6 : 16,
               outline: "none",
               fontFamily: "'IBM Plex Sans',sans-serif",
               boxSizing: "border-box",
             }}
           />
+
+          {password.length > 0 && !passwordStrong && (
+            <p
+              style={{
+                fontSize: 11.5,
+                color: T.bear,
+                marginBottom: 14,
+                marginTop: 0,
+              }}
+            >
+              Password must be at least 8 characters.
+            </p>
+          )}
 
           {error && (
             <div
@@ -166,43 +250,42 @@ function LoginForm() {
               fontFamily: "'IBM Plex Sans',sans-serif",
             }}
           >
-            {loading ? "Signing in…" : "Sign in"}
+            {loading ? "Creating account…" : "Create account"}
           </button>
         </form>
 
-        <div
+        <p
           style={{
-            marginTop: 20,
+            marginTop: 16,
             paddingTop: 16,
             borderTop: `1px solid ${T.line}`,
-            display: "flex",
-            justifyContent: "space-between",
             fontSize: 12,
             color: T.soft,
+            textAlign: "center",
           }}
         >
+          Already have an account?{" "}
           <Link
-            href="/auth/signup"
+            href="/auth/login"
             style={{ color: T.gold, textDecoration: "none" }}
           >
-            Create account
+            Sign in
           </Link>
-          <Link
-            href={`/auth/forgot?email=${encodeURIComponent(email)}`}
-            style={{ color: T.soft, textDecoration: "none" }}
-          >
-            Forgot password?
-          </Link>
-        </div>
+        </p>
+
+        <p
+          style={{
+            fontSize: 11,
+            color: T.faint,
+            marginTop: 12,
+            lineHeight: 1.5,
+            textAlign: "center",
+          }}
+        >
+          By creating an account you agree to our Terms of Service. You must be
+          18 or older to use Stereoscope.
+        </p>
       </div>
     </div>
-  );
-}
-
-export default function LoginPage() {
-  return (
-    <Suspense>
-      <LoginForm />
-    </Suspense>
   );
 }
