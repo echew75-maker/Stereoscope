@@ -19,7 +19,7 @@ import { ANALYSIS_SCHEMA_PROMPT, extractReportJSON } from "../lib/prompts/analys
 
 const TICKER = process.argv[2] || "PYPL";
 
-function check(name: string, raw: string) {
+function check(name: "GROWTH SCOUT" | "VALUE GUARD", raw: string) {
   console.log(`\n================ ${name} (${raw.length} chars) ================`);
   const json = extractReportJSON(raw) as Record<string, unknown> | null;
   if (!json) {
@@ -45,24 +45,30 @@ function check(name: string, raw: string) {
     range_low?: unknown;
     range_high?: unknown;
   };
-  const ka = v.base_case?.key_assumption;
-  const isOneSentence =
-    typeof ka === "string" && ka.trim().length > 0 &&
-    (ka.match(/[.!?]/g) || []).length <= 1;
-  const hasNumber = typeof ka === "string" && /\d/.test(ka);
-  console.log(`\nCheck 2 — key_assumption single sentence with a number? ${isOneSentence && hasNumber ? "✅" : "❌"}`);
-  console.log(`         "${ka}"`);
-  console.log(`         (one-sentence: ${isOneSentence}, contains digit: ${hasNumber})`);
 
-  const rangeStr = (json as { range?: string }).range;
-  console.log(`\nCheck 3 — range_low / range_high vs stated 'range' field`);
+  // Check 2: split into sentences but ignore periods inside numbers (e.g. "18.86%").
+  // Replace digit-period-digit with digit-digit before counting terminators.
+  const ka = v.base_case?.key_assumption;
+  const kaForCount = typeof ka === "string" ? ka.replace(/(\d)\.(\d)/g, "$1$2") : "";
+  const terminators = (kaForCount.match(/[.!?]/g) || []).length;
+  const isOneSentence = typeof ka === "string" && ka.trim().length > 0 && terminators <= 1;
+  const hasNumber = typeof ka === "string" && /\d/.test(ka);
+  const namesMetric = typeof ka === "string" && /(margin|cagr|growth|yield|rate|ratio|fcf|owner|book|value|nav|ncav|roic|roe|wacc|eps|revenue|earnings|cash|debt)/i.test(ka);
+  console.log(`\nCheck 2 — key_assumption single sentence naming a metric? ${isOneSentence && hasNumber && namesMetric ? "✅" : "❌"}`);
+  console.log(`         "${ka}"`);
+  console.log(`         (one-sentence: ${isOneSentence}, contains digit: ${hasNumber}, names a metric: ${namesMetric})`);
+
+  // Check 3: compare range_low/range_high to THIS LENS'S band label, not the
+  // 52-week trading range field.
+  const bandKey = name === "GROWTH SCOUT" ? "growthBandLabel" : "valueBandLabel";
+  const bandLabel = (json as Record<string, unknown>)[bandKey] as string | undefined;
+  console.log(`\nCheck 3 — range_low / range_high vs ${bandKey}`);
   console.log(`         valuation_assumptions.range_low  = ${v.range_low}`);
   console.log(`         valuation_assumptions.range_high = ${v.range_high}`);
-  console.log(`         json.range string                = "${rangeStr}"`);
+  console.log(`         ${bandKey} string                = "${bandLabel}"`);
 
-  // Try to extract two numbers from the rangeStr ("$58 – $92")
-  const nums = typeof rangeStr === "string"
-    ? (rangeStr.match(/\d+(?:\.\d+)?/g) || []).map(Number)
+  const nums = typeof bandLabel === "string"
+    ? (bandLabel.match(/\d+(?:\.\d+)?/g) || []).map(Number)
     : [];
   if (nums.length >= 2 && typeof v.range_low === "number" && typeof v.range_high === "number") {
     const lowMatch = Math.abs(nums[0] - v.range_low) < 0.01;
@@ -70,12 +76,12 @@ function check(name: string, raw: string) {
     console.log(`         Low match:  ${lowMatch ? "✅" : "❌"} (${nums[0]} vs ${v.range_low})`);
     console.log(`         High match: ${highMatch ? "✅" : "❌"} (${nums[1]} vs ${v.range_high})`);
   } else {
-    console.log("         ⚠ Could not extract two numbers from json.range to compare.");
+    console.log(`         ⚠ Could not extract two numbers from ${bandKey} to compare.`);
   }
 }
 
 async function main() {
-  console.log(`Probing PYPL with both scouts in parallel… (this takes 30–90s)`);
+  console.log(`Probing ${TICKER} with both scouts in parallel… (this takes 30–90s)`);
   const userMsgGrowth = `Analyze the stock ${TICKER}. Search the web for its most recent quarterly filing (10-Q or equivalent), current stock price, revenue growth, NDR, RPO, EPS history, institutional ownership, and analyst targets. Produce the complete Growth Scout Phase 1 scratchpad and Phase 2 guru analysis. Then return the structured JSON object as specified.`;
   const userMsgValue = `Analyze the stock ${TICKER}. Search the web for its most recent quarterly filing (10-Q or equivalent), balance sheet, cash flow statement, share count, SBC, debt, warrant liabilities, and analyst targets. Produce the complete Value Guard Phase 1 scratchpad and Phase 2 guru analysis. Then return the structured JSON object as specified.`;
 
