@@ -17,6 +17,7 @@ import { StockHeader } from "@/components/report/StockHeader";
 import { ValuationOverlay } from "@/components/report/ValuationOverlay";
 import { GuruPanel } from "@/components/report/GuruPanel";
 import { MungerPremortem } from "@/components/report/MungerPremortem";
+import { LensFailurePanel } from "@/components/report/LensFailurePanel";
 import { CatalystCalendar } from "@/components/report/CatalystCalendar";
 import { InvalidationMatrix } from "@/components/report/InvalidationMatrix";
 import { JournalThread } from "@/components/journal/JournalThread";
@@ -606,13 +607,21 @@ export default function TickerPage() {
               </h2>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-              <GuruPanel type="growth" gurus={rd.growthGurus} metrics={rd.growthMetrics} />
-              <GuruPanel
-                type="value"
-                gurus={rd.valueGurus}
-                metrics={rd.valueMetrics}
-                gaapVsNonGaap={rd.gaapVsNonGaap}
-              />
+              {rd.growthScoutOk ? (
+                <GuruPanel type="growth" gurus={rd.growthGurus} metrics={rd.growthMetrics} />
+              ) : (
+                <LensFailurePanel lens="Growth Scout" onRetry={() => analyzeStock(true)} />
+              )}
+              {rd.valueScoutOk ? (
+                <GuruPanel
+                  type="value"
+                  gurus={rd.valueGurus}
+                  metrics={rd.valueMetrics}
+                  gaapVsNonGaap={rd.gaapVsNonGaap}
+                />
+              ) : (
+                <LensFailurePanel lens="Value Guard" onRetry={() => analyzeStock(true)} />
+              )}
             </div>
           </section>
 

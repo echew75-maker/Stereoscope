@@ -65,6 +65,8 @@ export interface ReportData {
   growthAssumptions: ValuationAssumptions | null;
   valueAssumptions: ValuationAssumptions | null;
   gaapVsNonGaap: GaapVsNonGaap | null;
+  growthScoutOk: boolean;
+  valueScoutOk: boolean;
 }
 
 export interface Stat {

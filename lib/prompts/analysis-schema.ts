@@ -293,6 +293,12 @@ export function parseReportJSON(
   const value  = extractJSON(valueRaw)  || {};
   const arbiter = extractJSON(arbiterRaw) || {};
 
+  // A scout "succeeded" when it produced a non-empty gurus array of its own
+  // lens. Empty array → the scout failed to emit usable structured output and
+  // the UI should surface that explicitly rather than render misleading zeros.
+  const growthScoutOk = Array.isArray(growth.growthGurus) && growth.growthGurus.length > 0;
+  const valueScoutOk = Array.isArray(value.valueGurus) && value.valueGurus.length > 0;
+
   // Per-lens assumptions: Growth Scout owns growthAssumptions, Value Guard owns
   // valueAssumptions. Validate each independently; missing/malformed → null so
   // the UI renders the fallback line instead of crashing.
@@ -384,6 +390,8 @@ export function parseReportJSON(
     growthAssumptions,
     valueAssumptions,
     gaapVsNonGaap,
+    growthScoutOk,
+    valueScoutOk,
   };
 
   return result;

@@ -26,6 +26,16 @@ export async function GET(
     return Response.json({ exists: false });
   }
 
+  // Treat cached rows where one scout failed as non-existent — the analyze
+  // route now refuses to cache those, but older rows may still be in the
+  // database from before that guard shipped.
+  const rd = data.report_data;
+  const growthOk = Array.isArray(rd.growthGurus) && rd.growthGurus.length > 0;
+  const valueOk = Array.isArray(rd.valueGurus) && rd.valueGurus.length > 0;
+  if (!growthOk || !valueOk) {
+    return Response.json({ exists: false });
+  }
+
   const ageHours = Math.round(
     (Date.now() - new Date(data.created_at).getTime()) / 3600000
   );

@@ -46,19 +46,37 @@ export async function POST(req: NextRequest) {
     const startTime = Date.now();
     const schemaInstructions = ANALYSIS_SCHEMA_PROMPT;
 
+    const growthUserMsg = `Analyze the stock ${normalizedTicker}. Search the web for its most recent quarterly filing (10-Q or equivalent), current stock price, revenue growth, NDR, RPO, EPS history, institutional ownership, and analyst targets. Produce the complete Growth Scout Phase 1 scratchpad and Phase 2 guru analysis. Then return the structured JSON object as specified.`;
+    const valueUserMsg = `Analyze the stock ${normalizedTicker}. Search the web for its most recent quarterly filing (10-Q or equivalent), balance sheet, cash flow statement, share count, SBC, debt, warrant liabilities, and analyst targets. Produce the complete Value Guard Phase 1 scratchpad and Phase 2 guru analysis. Then return the structured JSON object as specified.`;
+    const growthSystem = GROWTH_SCOUT_PROMPT + "\n\n---\n\nOUTPUT FORMAT INSTRUCTIONS:\n" + schemaInstructions;
+    const valueSystem = VALUE_GUARD_PROMPT + "\n\n---\n\nOUTPUT FORMAT INSTRUCTIONS:\n" + schemaInstructions;
+
+    function scoutOk(raw: string, lens: "growth" | "value"): boolean {
+      const j = extractReportJSON(raw);
+      if (!j) return false;
+      const gurus = lens === "growth" ? j.growthGurus : j.valueGurus;
+      return Array.isArray(gurus) && gurus.length > 0;
+    }
+
     // ── STAGES 1+2: Growth Scout and Value Guard run in parallel ──
-    const [growthRaw, valueRaw] = await Promise.all([
-      callGemini(
-        GROWTH_SCOUT_PROMPT + "\n\n---\n\nOUTPUT FORMAT INSTRUCTIONS:\n" + schemaInstructions,
-        `Analyze the stock ${normalizedTicker}. Search the web for its most recent quarterly filing (10-Q or equivalent), current stock price, revenue growth, NDR, RPO, EPS history, institutional ownership, and analyst targets. Produce the complete Growth Scout Phase 1 scratchpad and Phase 2 guru analysis. Then return the structured JSON object as specified.`,
-        true
-      ),
-      callGemini(
-        VALUE_GUARD_PROMPT + "\n\n---\n\nOUTPUT FORMAT INSTRUCTIONS:\n" + schemaInstructions,
-        `Analyze the stock ${normalizedTicker}. Search the web for its most recent quarterly filing (10-Q or equivalent), balance sheet, cash flow statement, share count, SBC, debt, warrant liabilities, and analyst targets. Produce the complete Value Guard Phase 1 scratchpad and Phase 2 guru analysis. Then return the structured JSON object as specified.`,
-        true
-      ),
+    let [growthRaw, valueRaw] = await Promise.all([
+      callGemini(growthSystem, growthUserMsg, true),
+      callGemini(valueSystem, valueUserMsg, true),
     ]);
+
+    // Retry once for whichever scout(s) failed to produce a parseable, populated
+    // guru array. JSON extraction failures and empty arrays are typically
+    // transient (token limit / safety filter) and succeed on the second attempt.
+    const growthOk = scoutOk(growthRaw, "growth");
+    const valueOk = scoutOk(valueRaw, "value");
+    if (!growthOk || !valueOk) {
+      const retries = await Promise.all([
+        growthOk ? Promise.resolve(growthRaw) : callGemini(growthSystem, growthUserMsg, true),
+        valueOk ? Promise.resolve(valueRaw) : callGemini(valueSystem, valueUserMsg, true),
+      ]);
+      growthRaw = retries[0];
+      valueRaw = retries[1];
+    }
 
     // ── STAGE 3: Arbiter (uses both outputs above) ──
     // Feed the Arbiter the scouts' compact extracted JSON rather than their full
@@ -98,18 +116,22 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // ── Save to cache (non-fatal: report still returns even if caching fails) ──
-    const { error: upsertError } = await supabase.from("reports").upsert(
-      {
-        ticker: normalizedTicker,
-        report_data: reportData,
-        filing_period: reportData.filingPeriod,
-        filing_date: reportData.filingDate,
-        gemini_model: "gemini-2.5-flash",
-        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-      },
-      { onConflict: "ticker,filing_period" }
-    );
+    // ── Save to cache, but only when both scouts succeeded. Caching a partial
+    //    failure would lock users into a broken report for the 7-day TTL.
+    const bothScoutsOk = reportData.growthScoutOk && reportData.valueScoutOk;
+    const { error: upsertError } = bothScoutsOk
+      ? await supabase.from("reports").upsert(
+          {
+            ticker: normalizedTicker,
+            report_data: reportData,
+            filing_period: reportData.filingPeriod,
+            filing_date: reportData.filingDate,
+            gemini_model: "gemini-2.5-flash",
+            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          },
+          { onConflict: "ticker,filing_period" }
+        )
+      : { error: null };
 
     return Response.json({
       success: true,

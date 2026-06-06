@@ -58,60 +58,64 @@ export function ValuationOverlay({ rd }: Props) {
             border: `1px solid ${T.line}`,
           }}
         />
-        <div
-          style={{
-            position: "absolute",
-            top: 29,
-            left: rd.valueBandLeft || "24%",
-            width: rd.valueBandWidth || "16%",
-            height: 10,
-            borderRadius: 5,
-            background: T.valueSoft,
-            border: `1.5px solid ${T.valueLine}`,
-          }}
-        >
-          <span
+        {rd.valueScoutOk && (
+          <div
             style={{
               position: "absolute",
-              top: -18,
-              left: "50%",
-              transform: "translateX(-50%)",
-              whiteSpace: "nowrap",
-              fontSize: 10,
-              fontWeight: 600,
-              color: T.value,
+              top: 29,
+              left: rd.valueBandLeft || "24%",
+              width: rd.valueBandWidth || "16%",
+              height: 10,
+              borderRadius: 5,
+              background: T.valueSoft,
+              border: `1.5px solid ${T.valueLine}`,
             }}
           >
-            {rd.valueBandLabel || "Value"}
-          </span>
-        </div>
-        <div
-          style={{
-            position: "absolute",
-            top: 29,
-            left: rd.growthBandLeft || "74%",
-            width: rd.growthBandWidth || "18%",
-            height: 10,
-            borderRadius: 5,
-            background: T.growthSoft,
-            border: `1.5px solid ${T.growthLine}`,
-          }}
-        >
-          <span
+            <span
+              style={{
+                position: "absolute",
+                top: -18,
+                left: "50%",
+                transform: "translateX(-50%)",
+                whiteSpace: "nowrap",
+                fontSize: 10,
+                fontWeight: 600,
+                color: T.value,
+              }}
+            >
+              {rd.valueBandLabel || "Value"}
+            </span>
+          </div>
+        )}
+        {rd.growthScoutOk && (
+          <div
             style={{
               position: "absolute",
-              top: -18,
-              left: "50%",
-              transform: "translateX(-50%)",
-              whiteSpace: "nowrap",
-              fontSize: 10,
-              fontWeight: 600,
-              color: T.growth,
+              top: 29,
+              left: rd.growthBandLeft || "74%",
+              width: rd.growthBandWidth || "18%",
+              height: 10,
+              borderRadius: 5,
+              background: T.growthSoft,
+              border: `1.5px solid ${T.growthLine}`,
             }}
           >
-            {rd.growthBandLabel || "Growth"}
-          </span>
-        </div>
+            <span
+              style={{
+                position: "absolute",
+                top: -18,
+                left: "50%",
+                transform: "translateX(-50%)",
+                whiteSpace: "nowrap",
+                fontSize: 10,
+                fontWeight: 600,
+                color: T.growth,
+              }}
+            >
+              {rd.growthBandLabel || "Growth"}
+            </span>
+          </div>
+        )}
         <div
           style={{
             position: "absolute",
@@ -172,20 +176,28 @@ export function ValuationOverlay({ rd }: Props) {
       )}
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 11, marginTop: 18 }}>
-        <ValuationRange
-          label="Growth Scout"
-          rangeLow={rd.growthAssumptions?.range_low ?? 0}
-          rangeHigh={rd.growthAssumptions?.range_high ?? 0}
-          currentPrice={rd.price}
-          assumptions={rd.growthAssumptions}
-        />
-        <ValuationRange
-          label="Value Guard"
-          rangeLow={rd.valueAssumptions?.range_low ?? 0}
-          rangeHigh={rd.valueAssumptions?.range_high ?? 0}
-          currentPrice={rd.price}
-          assumptions={rd.valueAssumptions}
-        />
+        {rd.growthScoutOk ? (
+          <ValuationRange
+            label="Growth Scout"
+            rangeLow={rd.growthAssumptions?.range_low ?? 0}
+            rangeHigh={rd.growthAssumptions?.range_high ?? 0}
+            currentPrice={rd.price}
+            assumptions={rd.growthAssumptions}
+          />
+        ) : (
+          <ScoutFailureCard lens="Growth Scout" />
+        )}
+        {rd.valueScoutOk ? (
+          <ValuationRange
+            label="Value Guard"
+            rangeLow={rd.valueAssumptions?.range_low ?? 0}
+            rangeHigh={rd.valueAssumptions?.range_high ?? 0}
+            currentPrice={rd.price}
+            assumptions={rd.valueAssumptions}
+          />
+        ) : (
+          <ScoutFailureCard lens="Value Guard" />
+        )}
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 11, marginTop: 18 }}>
@@ -327,6 +339,40 @@ export function ValuationOverlay({ rd }: Props) {
           <span style={{ fontSize: 11.5, color: T.soft }}>{rd.decisiveText}</span>
         </div>
       )}
+    </div>
+  );
+}
+
+function ScoutFailureCard({ lens }: { lens: "Growth Scout" | "Value Guard" }) {
+  const accent = lens === "Growth Scout" ? T.growth : T.value;
+  const tint = lens === "Growth Scout" ? T.growthSoft : T.valueSoft;
+  return (
+    <div
+      style={{
+        border: `1px dashed ${accent}66`,
+        borderRadius: 10,
+        padding: "14px 15px",
+        background: tint,
+      }}
+    >
+      <div
+        style={{
+          fontSize: 10,
+          letterSpacing: ".1em",
+          textTransform: "uppercase",
+          color: accent,
+          fontWeight: 600,
+          marginBottom: 6,
+        }}
+      >
+        ⚠ {lens} — analysis incomplete
+      </div>
+      <div style={{ fontSize: 12, color: T.soft, lineHeight: 1.55 }}>
+        This lens didn&apos;t return a usable structured analysis on the last run.
+        The conclusions you see elsewhere on this page reflect only the other lens.
+        Use the <b>Refresh</b> button at the top right to re-run; it usually
+        succeeds on the second attempt.
+      </div>
     </div>
   );
 }

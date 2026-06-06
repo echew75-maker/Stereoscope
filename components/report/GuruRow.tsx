@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { tokens as T } from "@/lib/tokens";
 import { Guru } from "@/lib/types";
+import { GlossaryText } from "@/lib/highlightGlossaryTerms";
 
 function dotColor(s: "b" | "n" | "r") {
   return s === "b" ? T.bull : s === "r" ? T.bear : T.neutral;
@@ -69,7 +70,9 @@ export function GuruRow({ g }: Props) {
       </div>
       {open && (
         <div style={{ padding: "0 10px 12px 26px", animation: "fadeIn .2s ease" }}>
-          <div style={{ fontSize: 12, color: T.soft, lineHeight: 1.6 }}>{g.overview}</div>
+          <div style={{ fontSize: 12, color: T.soft, lineHeight: 1.6 }}>
+            <GlossaryText text={g.overview} />
+          </div>
           {g.conclusion && (
             <div
               style={{
@@ -93,7 +96,9 @@ export function GuruRow({ g }: Props) {
               >
                 {g.n.split(" ").pop()}&apos;s Conclusion
               </div>
-              <div style={{ fontSize: 12, color: T.ink, lineHeight: 1.6 }}>{g.conclusion}</div>
+              <div style={{ fontSize: 12, color: T.ink, lineHeight: 1.6 }}>
+                <GlossaryText text={g.conclusion} />
+              </div>
             </div>
           )}
         </div>
