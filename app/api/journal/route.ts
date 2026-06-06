@@ -1,19 +1,9 @@
 import { callClaude } from "@/lib/claude";
+import { parseCommitment, stripCommitment } from "@/lib/commitment";
 import { buildSparringPrompt } from "@/lib/prompts/sparring";
 import { createServerClient } from "@/lib/supabase/server";
 import { ReportData } from "@/lib/types";
 import { NextRequest } from "next/server";
-
-function parseCommitment(text: string) {
-  const m = text.match(
-    /\[COMMITMENT:\s*(.+?)\s*\|\s*THRESHOLD:\s*(.+?)\s*\|\s*CHECK:\s*(.+?)\s*\]/
-  );
-  return m ? { text: m[1], threshold: m[2], checkDate: m[3] } : null;
-}
-
-function stripCommitment(text: string) {
-  return text.replace(/\n?\[COMMITMENT:.*?\]/, "").trim();
-}
 
 export async function POST(req: NextRequest) {
   try {

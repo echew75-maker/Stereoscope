@@ -22,9 +22,3 @@ export const tokens = {
   mungerSoft: "#EDE8F5",
   shadow: "0 1px 2px rgba(14,16,18,.04),0 6px 20px rgba(14,16,18,.05)",
 } as const;
-
-export const fonts = {
-  display: "'Fraunces', serif",
-  body: "'IBM Plex Sans', -apple-system, sans-serif",
-  mono: "'IBM Plex Mono', monospace",
-};

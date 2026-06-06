@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { tokens as T } from "@/lib/tokens";
 import { ReportData, JournalMessage, Commitment } from "@/lib/types";
+import { parseCommitment } from "@/lib/commitment";
 
 // Components
 import { Masthead } from "@/components/layout/Masthead";
@@ -17,14 +18,7 @@ import { InvalidationMatrix } from "@/components/report/InvalidationMatrix";
 import { JournalThread } from "@/components/journal/JournalThread";
 import { CommitmentCard } from "@/components/journal/CommitmentCard";
 
-type Screen = "loading" | "analyzing" | "report" | "error";
-
-function parseCommitment(text: string) {
-  const m = text.match(
-    /\[COMMITMENT:\s*(.+?)\s*\|\s*THRESHOLD:\s*(.+?)\s*\|\s*CHECK:\s*(.+?)\s*\]/
-  );
-  return m ? { text: m[1], threshold: m[2], checkDate: m[3] } : null;
-}
+type Screen = "loading" | "analyzing" | "report";
 
 export default function TickerPage() {
   const params = useParams();
