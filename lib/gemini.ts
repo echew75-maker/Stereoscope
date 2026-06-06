@@ -9,10 +9,11 @@ export async function callGemini(
   const body: Record<string, unknown> = {
     system_instruction: { parts: [{ text: systemPrompt }] },
     contents: [{ role: "user", parts: [{ text: userMessage }] }],
+    // thinking_config at top level (not inside generation_config)
+    thinking_config: { thinking_budget: 0 },
     generation_config: {
       temperature: 0.2,
       max_output_tokens: 16384,
-      thinking_config: { thinking_budget: 0 },
     },
   };
 
@@ -35,13 +36,16 @@ export async function callGemini(
   }
 
   const data = await res.json();
-  const parts = data.candidates?.[0]?.content?.parts || [];
+  const parts: Array<{ text?: string; thought?: boolean }> =
+    data.candidates?.[0]?.content?.parts || [];
 
-  const text = parts
-    .filter((p: { text?: string }) => p.text)
-    .map((p: { text: string }) => p.text)
+  // Search ALL parts (including thought parts) for <json> tag first —
+  // Gemini sometimes puts the JSON inside a thought part when thinking is on.
+  const allText = parts
+    .filter((p) => p.text)
+    .map((p) => p.text as string)
     .join("\n");
 
-  if (!text) throw new Error("Empty Gemini response");
-  return text;
+  if (!allText) throw new Error("Empty Gemini response");
+  return allText;
 }
