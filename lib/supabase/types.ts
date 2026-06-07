@@ -90,6 +90,26 @@ export interface Database {
           created_at?: string;
         };
       };
+      analysis_usage: {
+        Row: {
+          id: string;
+          user_id: string;
+          ticker: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          ticker: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          ticker?: string;
+          created_at?: string;
+        };
+      };
       commitments: {
         Row: {
           id: string;

@@ -35,6 +35,7 @@ export default function TickerPage() {
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
+  const [limitExceeded, setLimitExceeded] = useState<{ used: number; limit: number; tier: string } | null>(null);
   const [reportTab, setReportTab] = useState<"report" | "journal">("report");
   const [priorView, setPriorView] = useState<"bullish" | "neutral" | "bearish" | null>(null);
 
@@ -98,6 +99,11 @@ export default function TickerPage() {
       const data = await res.json();
 
       if (!data.success) {
+        if (data.error === "limit_exceeded") {
+          setLimitExceeded({ used: data.used, limit: data.limit, tier: data.tier });
+          setScreen("loading");
+          return;
+        }
         const errMsg =
           typeof data.error === "string"
             ? data.error
@@ -267,6 +273,78 @@ export default function TickerPage() {
   }
 
   // ── SCREENS ──
+
+  if (screen === "loading" && limitExceeded) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          background: T.bg,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 20,
+          fontFamily: "'IBM Plex Sans',-apple-system,sans-serif",
+        }}
+      >
+        <div
+          style={{
+            maxWidth: 420,
+            width: "100%",
+            background: T.card,
+            border: `1px solid ${T.line}`,
+            borderRadius: 14,
+            padding: "32px 28px",
+            boxShadow: T.shadow,
+          }}
+        >
+          <div style={{ fontSize: 22, marginBottom: 8 }}>📊</div>
+          <h2 style={{ fontSize: 17, fontWeight: 600, marginBottom: 8 }}>
+            Monthly limit reached
+          </h2>
+          <p style={{ fontSize: 13.5, color: T.soft, marginBottom: 20, lineHeight: 1.6 }}>
+            You've used {limitExceeded.used} of {limitExceeded.limit} analyses this month on the{" "}
+            <strong>Free</strong> plan. Upgrade to continue.
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <a
+              href="/account"
+              style={{
+                display: "block",
+                padding: "11px",
+                background: T.ink,
+                color: "#fff",
+                border: "none",
+                borderRadius: 8,
+                fontSize: 13.5,
+                fontWeight: 600,
+                cursor: "pointer",
+                textAlign: "center",
+                textDecoration: "none",
+              }}
+            >
+              View account &amp; upgrade
+            </a>
+            <button
+              onClick={() => router.push("/")}
+              style={{
+                padding: "11px",
+                background: "transparent",
+                border: `1px solid ${T.line}`,
+                borderRadius: 8,
+                fontSize: 13.5,
+                color: T.soft,
+                cursor: "pointer",
+                fontFamily: "'IBM Plex Sans',sans-serif",
+              }}
+            >
+              ← Back to home
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (screen === "loading") {
     return (

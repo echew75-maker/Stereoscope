@@ -4,6 +4,7 @@ import { VALUE_GUARD_PROMPT } from "@/lib/prompts/value-guard";
 import { ARBITER_PROMPT } from "@/lib/prompts/arbiter";
 import { ANALYSIS_SCHEMA_PROMPT, parseReportJSON, extractReportJSON } from "@/lib/prompts/analysis-schema";
 import { fetchLivePrice, priceContext } from "@/lib/finnhub";
+import { getUsageStatus, recordUsage } from "@/lib/usageLimit";
 import { createServerClient } from "@/lib/supabase/server";
 import { NextRequest } from "next/server";
 
@@ -18,6 +19,18 @@ export async function POST(req: NextRequest) {
 
   const normalizedTicker = ticker.toUpperCase();
   const supabase = await createServerClient();
+
+  // ── Credit gate for authenticated users ──
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    const usage = await getUsageStatus(supabase, user.id);
+    if (!usage.allowed) {
+      return Response.json(
+        { success: false, error: "limit_exceeded", used: usage.used, limit: usage.limit, tier: usage.tier },
+        { status: 429 }
+      );
+    }
+  }
 
   // Check cache (skipped when force=true)
   if (!force) {
@@ -138,6 +151,11 @@ export async function POST(req: NextRequest) {
           { onConflict: "ticker,filing_period" }
         )
       : { error: null };
+
+    // ── Record usage for authenticated users (only when analysis succeeded) ──
+    if (user && bothScoutsOk) {
+      await recordUsage(supabase, user.id, normalizedTicker);
+    }
 
     return Response.json({
       success: true,

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { tokens as T } from "@/lib/tokens";
+import { TIER_LIMITS } from "@/lib/usageLimit";
 
 interface Profile {
   email: string | null;
@@ -11,8 +12,58 @@ interface Profile {
   created_at: string;
 }
 
+function UsageMeter({ used, limit }: { used: number; limit: number | null }) {
+  if (limit === null) {
+    return (
+      <p style={{ fontSize: 13, color: T.growth, marginTop: 12 }}>
+        ∞ Unlimited analyses
+      </p>
+    );
+  }
+  const pct = Math.min((used / limit) * 100, 100);
+  const color = pct >= 100 ? T.bear : pct >= 80 ? T.neutral : T.growth;
+
+  return (
+    <div style={{ marginTop: 12 }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          fontSize: 12,
+          color: T.soft,
+          marginBottom: 6,
+        }}
+      >
+        <span>This month</span>
+        <span style={{ color, fontWeight: 600 }}>
+          {used} / {limit} analyses
+        </span>
+      </div>
+      <div
+        style={{
+          height: 6,
+          background: T.lineSoft,
+          borderRadius: 3,
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            height: "100%",
+            width: `${pct}%`,
+            background: color,
+            borderRadius: 3,
+            transition: "width .4s ease",
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function AccountPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [usedThisMonth, setUsedThisMonth] = useState(0);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const supabase = createClient();
@@ -22,15 +73,27 @@ export default function AccountPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.push("/auth/login?next=/account"); return; }
 
-      const { data } = await supabase
-        .from("profiles")
-        .select("email, tier, created_at")
-        .eq("id", user.id)
-        .single();
+      const startOfMonth = new Date();
+      startOfMonth.setUTCDate(1);
+      startOfMonth.setUTCHours(0, 0, 0, 0);
+
+      const [profileRes, usageRes] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("email, tier, created_at")
+          .eq("id", user.id)
+          .single(),
+        supabase
+          .from("analysis_usage")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .gte("created_at", startOfMonth.toISOString()),
+      ]);
 
       setProfile(
-        data ?? { email: user.email ?? null, tier: "free", created_at: user.created_at }
+        profileRes.data ?? { email: user.email ?? null, tier: "free", created_at: user.created_at }
       );
+      setUsedThisMonth(usageRes.count ?? 0);
       setLoading(false);
     }
     load();
@@ -42,10 +105,13 @@ export default function AccountPage() {
     router.refresh();
   }
 
+  const tier = profile?.tier ?? "free";
+  const limit = TIER_LIMITS[tier];
+
   const tierLabel: Record<string, string> = {
-    free: "Free — 5 analyses / month",
-    researcher: "Researcher — 15 analyses / month",
-    pro: "Pro — Unlimited analyses",
+    free: "Free",
+    researcher: "Researcher",
+    pro: "Pro",
   };
 
   const tierColor: Record<string, string> = {
@@ -95,7 +161,7 @@ export default function AccountPage() {
           <p style={{ color: T.soft, fontSize: 13.5 }}>Loading…</p>
         ) : (
           <>
-            {/* Profile card */}
+            {/* Profile + usage card */}
             <div
               style={{
                 background: T.card,
@@ -112,7 +178,7 @@ export default function AccountPage() {
                   color: T.faint,
                   letterSpacing: ".08em",
                   textTransform: "uppercase",
-                  marginBottom: 8,
+                  marginBottom: 6,
                 }}
               >
                 Email
@@ -127,7 +193,7 @@ export default function AccountPage() {
                   color: T.faint,
                   letterSpacing: ".08em",
                   textTransform: "uppercase",
-                  marginBottom: 8,
+                  marginBottom: 6,
                 }}
               >
                 Plan
@@ -136,15 +202,21 @@ export default function AccountPage() {
                 style={{
                   fontSize: 14,
                   fontWeight: 600,
-                  color: tierColor[profile?.tier ?? "free"],
+                  color: tierColor[tier],
+                  marginBottom: 4,
                 }}
               >
-                {tierLabel[profile?.tier ?? "free"]}
+                {tierLabel[tier]}
               </div>
+
+              <UsageMeter
+                used={usedThisMonth}
+                limit={limit === Infinity ? null : limit}
+              />
             </div>
 
             {/* Upgrade nudge for free users */}
-            {profile?.tier === "free" && (
+            {tier === "free" && (
               <div
                 style={{
                   background: T.goldSoft,
@@ -154,11 +226,11 @@ export default function AccountPage() {
                   marginBottom: 16,
                   fontSize: 13,
                   color: T.ink,
-                  lineHeight: 1.5,
+                  lineHeight: 1.6,
                 }}
               >
-                <strong>Researcher — $9/month</strong> · 15 analyses, annual
-                option available.
+                <strong>Researcher — $9/month</strong> · 15 analyses/month,
+                annual option (pay 10 get 12) available.
                 <br />
                 <span style={{ color: T.soft }}>
                   Paid plans coming soon.
