@@ -293,6 +293,28 @@ function AccountPageInner() {
                       <div style={{ fontSize: 11, color: T.soft }}>or $90/yr (2 months free)</div>
                     </div>
                   </div>
+                  <ul
+                    style={{
+                      margin: "0 0 12px 0",
+                      padding: 0,
+                      listStyle: "none",
+                      fontSize: 12,
+                      color: T.soft,
+                      lineHeight: 1.7,
+                    }}
+                  >
+                    {[
+                      "Growth Scout · Value Guard · Arbiter synthesis",
+                      "Full valuation bands with Crux question",
+                      "Catalysts, triggers & Munger pre-mortem",
+                      "Investment Journal with AI follow-up",
+                    ].map((f) => (
+                      <li key={f} style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                        <span style={{ color: T.value, fontSize: 10, flexShrink: 0 }}>✦</span>
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
                   <div style={{ display: "flex", gap: 8 }}>
                     <button
                       onClick={() => handleUpgrade(process.env.NEXT_PUBLIC_STRIPE_RESEARCHER_PRICE_ID!)}
@@ -355,6 +377,28 @@ function AccountPageInner() {
                       <div style={{ fontSize: 11, color: T.soft }}>or $190/yr (2 months free)</div>
                     </div>
                   </div>
+                  <ul
+                    style={{
+                      margin: "0 0 12px 0",
+                      padding: 0,
+                      listStyle: "none",
+                      fontSize: 12,
+                      color: T.soft,
+                      lineHeight: 1.7,
+                    }}
+                  >
+                    {[
+                      "Everything in Researcher",
+                      "No monthly cap — analyse any number of tickers",
+                      "Screen the full cached universe without limits",
+                      "Early access to new lenses and features",
+                    ].map((f) => (
+                      <li key={f} style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                        <span style={{ color: T.gold, fontSize: 10, flexShrink: 0 }}>✦</span>
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
                   <div style={{ display: "flex", gap: 8 }}>
                     <button
                       onClick={() => handleUpgrade(process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID!)}
