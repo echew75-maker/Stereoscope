@@ -1,7 +1,10 @@
 -- Run this in Supabase Dashboard → SQL Editor
 -- Creates the profiles table and auto-insert trigger for new users.
 
-create type if not exists user_tier as enum ('free', 'researcher', 'pro');
+DO $$ BEGIN
+  CREATE TYPE user_tier AS ENUM ('free', 'researcher', 'pro');
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
 
 create table if not exists public.profiles (
   id            uuid primary key references auth.users(id) on delete cascade,
