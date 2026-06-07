@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { tokens as T } from "@/lib/tokens";
 import { TIER_LIMITS } from "@/lib/usageLimit";
@@ -9,6 +10,8 @@ import { TIER_LIMITS } from "@/lib/usageLimit";
 interface Profile {
   email: string | null;
   tier: "free" | "researcher" | "pro";
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
   created_at: string;
 }
 
@@ -61,11 +64,14 @@ function UsageMeter({ used, limit }: { used: number; limit: number | null }) {
   );
 }
 
-export default function AccountPage() {
+function AccountPageInner() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [usedThisMonth, setUsedThisMonth] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [upgrading, setUpgrading] = useState<string | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const justUpgraded = searchParams.get("upgraded") === "1";
   const supabase = createClient();
 
   useEffect(() => {
@@ -80,7 +86,7 @@ export default function AccountPage() {
       const [profileRes, usageRes] = await Promise.all([
         supabase
           .from("profiles")
-          .select("email, tier, created_at")
+          .select("email, tier, stripe_customer_id, stripe_subscription_id, created_at")
           .eq("id", user.id)
           .single(),
         supabase
@@ -91,7 +97,13 @@ export default function AccountPage() {
       ]);
 
       setProfile(
-        profileRes.data ?? { email: user.email ?? null, tier: "free", created_at: user.created_at }
+        profileRes.data ?? {
+          email: user.email ?? null,
+          tier: "free",
+          stripe_customer_id: null,
+          stripe_subscription_id: null,
+          created_at: user.created_at,
+        }
       );
       setUsedThisMonth(usageRes.count ?? 0);
       setLoading(false);
@@ -103,6 +115,32 @@ export default function AccountPage() {
     await fetch("/auth/signout", { method: "POST" });
     router.push("/");
     router.refresh();
+  }
+
+  async function handleUpgrade(priceId: string) {
+    setUpgrading(priceId);
+    try {
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ priceId }),
+      });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+    } finally {
+      setUpgrading(null);
+    }
+  }
+
+  async function handleManageBilling() {
+    setUpgrading("portal");
+    try {
+      const res = await fetch("/api/stripe/portal", { method: "POST" });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+    } finally {
+      setUpgrading(null);
+    }
   }
 
   const tier = profile?.tier ?? "free";
@@ -156,6 +194,22 @@ export default function AccountPage() {
         >
           Your account
         </h1>
+
+        {justUpgraded && (
+          <div
+            style={{
+              background: "#0f2d1a",
+              border: `1px solid ${T.growth}`,
+              borderRadius: 10,
+              padding: "12px 16px",
+              marginBottom: 16,
+              fontSize: 13,
+              color: T.growth,
+            }}
+          >
+            Subscription activated — welcome to {tierLabel[tier]}!
+          </div>
+        )}
 
         {loading ? (
           <p style={{ color: T.soft, fontSize: 13.5 }}>Loading…</p>
@@ -215,27 +269,158 @@ export default function AccountPage() {
               />
             </div>
 
-            {/* Upgrade nudge for free users */}
+            {/* Upgrade cards — shown only to free users */}
             {tier === "free" && (
-              <div
+              <div style={{ marginBottom: 16 }}>
+                {/* Researcher */}
+                <div
+                  style={{
+                    background: T.card,
+                    border: `1px solid ${T.line}`,
+                    borderRadius: 12,
+                    padding: "18px 20px",
+                    marginBottom: 10,
+                    boxShadow: T.shadow,
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: T.value, marginBottom: 2 }}>Researcher</div>
+                      <div style={{ fontSize: 12, color: T.soft }}>15 analyses / month</div>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ fontSize: 18, fontWeight: 700, color: T.ink }}>$9<span style={{ fontSize: 12, fontWeight: 400, color: T.soft }}>/mo</span></div>
+                      <div style={{ fontSize: 11, color: T.soft }}>or $90/yr (2 months free)</div>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      onClick={() => handleUpgrade(process.env.NEXT_PUBLIC_STRIPE_RESEARCHER_PRICE_ID!)}
+                      disabled={upgrading !== null}
+                      style={{
+                        flex: 1,
+                        padding: "9px 0",
+                        background: T.value,
+                        border: "none",
+                        borderRadius: 8,
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: "#fff",
+                        cursor: upgrading ? "not-allowed" : "pointer",
+                        opacity: upgrading ? 0.6 : 1,
+                        fontFamily: "'IBM Plex Sans',sans-serif",
+                      }}
+                    >
+                      {upgrading === process.env.NEXT_PUBLIC_STRIPE_RESEARCHER_PRICE_ID ? "Redirecting…" : "Monthly — $9"}
+                    </button>
+                    <button
+                      onClick={() => handleUpgrade(process.env.NEXT_PUBLIC_STRIPE_RESEARCHER_ANNUAL_PRICE_ID!)}
+                      disabled={upgrading !== null}
+                      style={{
+                        flex: 1,
+                        padding: "9px 0",
+                        background: "transparent",
+                        border: `1px solid ${T.value}`,
+                        borderRadius: 8,
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: T.value,
+                        cursor: upgrading ? "not-allowed" : "pointer",
+                        opacity: upgrading ? 0.6 : 1,
+                        fontFamily: "'IBM Plex Sans',sans-serif",
+                      }}
+                    >
+                      {upgrading === process.env.NEXT_PUBLIC_STRIPE_RESEARCHER_ANNUAL_PRICE_ID ? "Redirecting…" : "Annual — $90"}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Pro */}
+                <div
+                  style={{
+                    background: T.card,
+                    border: `1px solid ${T.goldLine}`,
+                    borderRadius: 12,
+                    padding: "18px 20px",
+                    boxShadow: T.shadow,
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: T.gold, marginBottom: 2 }}>Pro</div>
+                      <div style={{ fontSize: 12, color: T.soft }}>Unlimited analyses</div>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ fontSize: 18, fontWeight: 700, color: T.ink }}>$19<span style={{ fontSize: 12, fontWeight: 400, color: T.soft }}>/mo</span></div>
+                      <div style={{ fontSize: 11, color: T.soft }}>or $190/yr (2 months free)</div>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      onClick={() => handleUpgrade(process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID!)}
+                      disabled={upgrading !== null}
+                      style={{
+                        flex: 1,
+                        padding: "9px 0",
+                        background: T.gold,
+                        border: "none",
+                        borderRadius: 8,
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: "#000",
+                        cursor: upgrading ? "not-allowed" : "pointer",
+                        opacity: upgrading ? 0.6 : 1,
+                        fontFamily: "'IBM Plex Sans',sans-serif",
+                      }}
+                    >
+                      {upgrading === process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID ? "Redirecting…" : "Monthly — $19"}
+                    </button>
+                    <button
+                      onClick={() => handleUpgrade(process.env.NEXT_PUBLIC_STRIPE_PRO_ANNUAL_PRICE_ID!)}
+                      disabled={upgrading !== null}
+                      style={{
+                        flex: 1,
+                        padding: "9px 0",
+                        background: "transparent",
+                        border: `1px solid ${T.goldLine}`,
+                        borderRadius: 8,
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: T.gold,
+                        cursor: upgrading ? "not-allowed" : "pointer",
+                        opacity: upgrading ? 0.6 : 1,
+                        fontFamily: "'IBM Plex Sans',sans-serif",
+                      }}
+                    >
+                      {upgrading === process.env.NEXT_PUBLIC_STRIPE_PRO_ANNUAL_PRICE_ID ? "Redirecting…" : "Annual — $190"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Manage billing — shown to paid users */}
+            {tier !== "free" && profile?.stripe_subscription_id && (
+              <button
+                onClick={handleManageBilling}
+                disabled={upgrading === "portal"}
                 style={{
-                  background: T.goldSoft,
-                  border: `1px solid ${T.goldLine}`,
-                  borderRadius: 12,
-                  padding: "16px 20px",
-                  marginBottom: 16,
+                  display: "block",
+                  width: "100%",
+                  padding: "10px 18px",
+                  background: "transparent",
+                  border: `1px solid ${T.line}`,
+                  borderRadius: 8,
                   fontSize: 13,
-                  color: T.ink,
-                  lineHeight: 1.6,
+                  color: T.soft,
+                  cursor: upgrading ? "not-allowed" : "pointer",
+                  fontFamily: "'IBM Plex Sans',sans-serif",
+                  marginBottom: 12,
+                  textAlign: "center",
                 }}
               >
-                <strong>Researcher — $9/month</strong> · 15 analyses/month,
-                annual option (pay 10 get 12) available.
-                <br />
-                <span style={{ color: T.soft }}>
-                  Paid plans coming soon.
-                </span>
-              </div>
+                {upgrading === "portal" ? "Opening…" : "Manage billing"}
+              </button>
             )}
 
             {/* Sign out */}
@@ -258,5 +443,13 @@ export default function AccountPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function AccountPage() {
+  return (
+    <Suspense>
+      <AccountPageInner />
+    </Suspense>
   );
 }

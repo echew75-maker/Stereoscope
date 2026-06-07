@@ -15,6 +15,8 @@ export interface Database {
           email: string | null;
           display_name: string | null;
           tier: "free" | "researcher" | "pro";
+          stripe_customer_id: string | null;
+          stripe_subscription_id: string | null;
           created_at: string;
         };
         Insert: {
@@ -22,6 +24,8 @@ export interface Database {
           email?: string | null;
           display_name?: string | null;
           tier?: "free" | "researcher" | "pro";
+          stripe_customer_id?: string | null;
+          stripe_subscription_id?: string | null;
           created_at?: string;
         };
         Update: {
@@ -29,6 +33,8 @@ export interface Database {
           email?: string | null;
           display_name?: string | null;
           tier?: "free" | "researcher" | "pro";
+          stripe_customer_id?: string | null;
+          stripe_subscription_id?: string | null;
           created_at?: string;
         };
       };
