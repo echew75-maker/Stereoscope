@@ -1,4 +1,5 @@
 import { callGemini } from "@/lib/gemini";
+import { callOpus } from "@/lib/claude";
 import { GROWTH_SCOUT_PROMPT } from "@/lib/prompts/growth-scout";
 import { VALUE_GUARD_PROMPT } from "@/lib/prompts/value-guard";
 import { ARBITER_PROMPT } from "@/lib/prompts/arbiter";
@@ -106,12 +107,9 @@ export async function POST(req: NextRequest) {
     const growthForArbiter = growthJSON ? JSON.stringify(growthJSON) : growthRaw;
     const valueForArbiter = valueJSON ? JSON.stringify(valueJSON) : valueRaw;
 
-    const arbiterRaw = await callGemini(
-      ARBITER_PROMPT +
-        "\n\n---\n\nOUTPUT FORMAT INSTRUCTIONS:\n" +
-        schemaInstructions,
-      `Here is the Growth Scout report for ${normalizedTicker} (structured findings):\n\n${growthForArbiter}\n\nHere is the Value Guard report for ${normalizedTicker} (structured findings):\n\n${valueForArbiter}\n\nProduce the Arbiter synthesis: factual reconciliation, valuation overlay with band positions, the Crux, the decisive data point, the Munger pre-mortem, 3 catalysts, 3 invalidation triggers, and the "what you're paying for" conditional. Return as the structured JSON object specified.`,
-      false
+    const arbiterRaw = await callOpus(
+      ARBITER_PROMPT + "\n\n---\n\nOUTPUT FORMAT INSTRUCTIONS:\n" + schemaInstructions,
+      `Here is the Growth Scout report for ${normalizedTicker} (structured findings):\n\n${growthForArbiter}\n\nHere is the Value Guard report for ${normalizedTicker} (structured findings):\n\n${valueForArbiter}\n\nProduce the Arbiter synthesis: factual reconciliation, valuation overlay with band positions, the Crux, the decisive data point, the Munger pre-mortem, 3 catalysts, 3 invalidation triggers, and the "what you're paying for" conditional. Return as the structured JSON object specified.`
     );
 
     // ── Merge into final ReportData ──
