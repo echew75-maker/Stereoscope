@@ -4,7 +4,7 @@ import { GROWTH_SCOUT_PROMPT } from "@/lib/prompts/growth-scout";
 import { VALUE_GUARD_PROMPT } from "@/lib/prompts/value-guard";
 import { ARBITER_PROMPT } from "@/lib/prompts/arbiter";
 import { ANALYSIS_SCHEMA_PROMPT, parseReportJSON, extractReportJSON } from "@/lib/prompts/analysis-schema";
-import { fetchLivePrice, priceContext } from "@/lib/finnhub";
+import { fetchLivePrice, fetchCompanyProfile, priceContext, companyContext } from "@/lib/finnhub";
 import { getUsageStatus, recordUsage } from "@/lib/usageLimit";
 import { createServerClient } from "@/lib/supabase/server";
 import { NextRequest } from "next/server";
@@ -61,13 +61,19 @@ export async function POST(req: NextRequest) {
     const startTime = Date.now();
     const schemaInstructions = ANALYSIS_SCHEMA_PROMPT;
 
-    // ── Fetch live price from Finnhub before analysis ──
-    // Non-fatal: if key is missing or call fails, Gemini extracts price from web.
-    const livePrice = await fetchLivePrice(normalizedTicker);
+    // ── Fetch live price + company profile from Finnhub before analysis ──
+    // Both are non-fatal: scouts fall back to web search if unavailable.
+    // Profile anchors both scouts to the same company, preventing ticker ambiguity
+    // (e.g. "TE" matching TE Connectivity instead of T1 Energy).
+    const [livePrice, companyProfile] = await Promise.all([
+      fetchLivePrice(normalizedTicker),
+      fetchCompanyProfile(normalizedTicker),
+    ]);
     const priceHint = priceContext(normalizedTicker, livePrice);
+    const companyHint = companyContext(companyProfile);
 
-    const growthUserMsg = `Analyze the stock ${normalizedTicker}.${priceHint} Search the web for its most recent quarterly filing (10-Q or equivalent), current stock price, revenue growth, NDR, RPO, EPS history, institutional ownership, and analyst targets. Produce the complete Growth Scout Phase 1 scratchpad and Phase 2 guru analysis. Then return the structured JSON object as specified.`;
-    const valueUserMsg = `Analyze the stock ${normalizedTicker}.${priceHint} Search the web for its most recent quarterly filing (10-Q or equivalent), balance sheet, cash flow statement, share count, SBC, debt, warrant liabilities, and analyst targets. Produce the complete Value Guard Phase 1 scratchpad and Phase 2 guru analysis. Then return the structured JSON object as specified.`;
+    const growthUserMsg = `Analyze the stock ${normalizedTicker}.${companyHint}${priceHint} Search the web for its most recent quarterly filing (10-Q or equivalent), current stock price, revenue growth, NDR, RPO, EPS history, institutional ownership, and analyst targets. Produce the complete Growth Scout Phase 1 scratchpad and Phase 2 guru analysis. Then return the structured JSON object as specified.`;
+    const valueUserMsg = `Analyze the stock ${normalizedTicker}.${companyHint}${priceHint} Search the web for its most recent quarterly filing (10-Q or equivalent), balance sheet, cash flow statement, share count, SBC, debt, warrant liabilities, and analyst targets. Produce the complete Value Guard Phase 1 scratchpad and Phase 2 guru analysis. Then return the structured JSON object as specified.`;
     const growthSystem = GROWTH_SCOUT_PROMPT + "\n\n---\n\nOUTPUT FORMAT INSTRUCTIONS:\n" + schemaInstructions;
     const valueSystem = VALUE_GUARD_PROMPT + "\n\n---\n\nOUTPUT FORMAT INSTRUCTIONS:\n" + schemaInstructions;
 
