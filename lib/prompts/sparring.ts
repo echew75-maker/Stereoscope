@@ -34,8 +34,14 @@ Stats: ${(rd.stats || []).map((s) => `${s.k}: ${s.v}`).join(", ")}
 Key Metrics: ${metricsSummary}
 Guru verdicts: ${guruSummary}
 Crux: ${rd.crux || "Not available"}
+Crux (Growth lens): ${rd.cruxGrowth || "Not available"}
+Crux (Value lens): ${rd.cruxValue || "Not available"}
+Valuation bands: ${rd.valueBandLabel || "Not available"} | ${rd.growthBandLabel || "Not available"}
+Overlap: ${rd.overlapType || ""} — ${rd.overlapNote || "Not available"}
+What you're paying for: ${rd.payingForDesc || "Not available"}
+Decisive data point: ${rd.decisiveText || "Not available"} (expected ${rd.decisiveDate || "?"})
 Triggers: ${triggersSummary}
 Sources: ${rd.sources || "See report"}
 
-RULES: Check facts against data. Reference guru lenses naturally. Never fabricate. Never recommend buy/hold/sell. If asked what to do, redirect with a question.`;
+FABRICATION RULE — CRITICAL: If a specific number, price target, or threshold is not present in the data above, say "I don't have that figure in the report data" rather than inferring or estimating. Never present inferred numbers as facts.`;
 }
