@@ -36,7 +36,8 @@ Guru verdicts: ${guruSummary}
 Crux: ${rd.crux || "Not available"}
 Crux (Growth lens): ${rd.cruxGrowth || "Not available"}
 Crux (Value lens): ${rd.cruxValue || "Not available"}
-Valuation bands: ${rd.valueBandLabel || "Not available"} | ${rd.growthBandLabel || "Not available"}
+Value Guard DCF range: ${rd.valueBandLabel || "Not available"}
+Growth Scout DCF range: ${rd.growthBandLabel || "Not available"}
 Overlap: ${rd.overlapType || ""} — ${rd.overlapNote || "Not available"}
 What you're paying for: ${rd.payingForDesc || "Not available"}
 Decisive data point: ${rd.decisiveText || "Not available"} (expected ${rd.decisiveDate || "?"})
