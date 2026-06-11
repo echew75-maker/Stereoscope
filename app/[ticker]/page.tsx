@@ -478,7 +478,7 @@ export default function TickerPage() {
             ))}
             <button
               onClick={() => analyzeStock(true)}
-              className="no-print"
+              className="no-print mobile-hide"
               title="Fetch fresh analysis from the web"
               style={{
                 border: `1px solid ${T.line}`,
@@ -497,7 +497,7 @@ export default function TickerPage() {
             </button>
             <button
               onClick={handleDownloadPDF}
-              className="no-print"
+              className="no-print mobile-hide"
               style={{
                 border: `1px solid ${T.line}`,
                 background: T.card,
@@ -520,6 +520,7 @@ export default function TickerPage() {
       {/* ── REPORT TAB ── */}
       {reportTab === "report" && (
         <div
+          className="report-page"
           style={{
             maxWidth: 1060,
             margin: "0 auto",
@@ -684,7 +685,7 @@ export default function TickerPage() {
                 Two engines, run blind
               </h2>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <div className="guru-panels-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
               {rd.growthScoutOk ? (
                 <GuruPanel type="growth" gurus={rd.growthGurus} metrics={rd.growthMetrics} />
               ) : (

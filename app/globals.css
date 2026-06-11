@@ -36,9 +36,36 @@ input::placeholder {
   to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-@media (max-width: 860px) {
-  h1 { font-size: 28px !important; }
+@media (max-width: 640px) {
+  /* Hide Refresh/PDF nav buttons — frees space for logo + tabs */
+  .mobile-hide { display: none !important; }
+
+  /* Tighter page padding on mobile */
+  .report-page { padding-left: 10px !important; padding-right: 10px !important; }
+
+  /* Guru panels: single column */
+  .guru-panels-grid { grid-template-columns: 1fr !important; }
+
+  /* GuruRow: wrap focus text to second line so it doesn't render vertically */
+  .guru-row-inner { flex-wrap: wrap !important; row-gap: 1px !important; }
+  .guru-row-focus {
+    order: 3;
+    flex: none !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    padding-left: 16px;
+  }
+  .guru-row-metric { max-width: 110px !important; }
+
+  /* Valuation overlay: stack both grids */
+  .val-mini-grid   { grid-template-columns: 1fr !important; }
+  .crux-paying-grid { grid-template-columns: 1fr !important; }
+
+  /* Price axis band labels: allow wrap so they don't overlap */
+  .band-label { white-space: normal !important; font-size: 9px !important; max-width: 70px; }
 }
+
+
 
 @media print {
   * {

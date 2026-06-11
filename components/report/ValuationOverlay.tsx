@@ -72,6 +72,7 @@ export function ValuationOverlay({ rd }: Props) {
             }}
           >
             <span
+              className="band-label"
               style={{
                 position: "absolute",
                 top: -18,
@@ -101,6 +102,7 @@ export function ValuationOverlay({ rd }: Props) {
             }}
           >
             <span
+              className="band-label"
               style={{
                 position: "absolute",
                 top: -18,
@@ -175,7 +177,7 @@ export function ValuationOverlay({ rd }: Props) {
         </div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 11, marginTop: 18 }}>
+      <div className="val-mini-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 11, marginTop: 18 }}>
         {rd.growthScoutOk ? (
           <ValuationRange
             label="Growth Scout"
@@ -200,7 +202,7 @@ export function ValuationOverlay({ rd }: Props) {
         )}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 11, marginTop: 18 }}>
+      <div className="crux-paying-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 11, marginTop: 18 }}>
         <div
           style={{
             border: `1px solid ${T.line}`,

@@ -20,6 +20,7 @@ export function GuruRow({ g }: Props) {
     <div style={{ borderBottom: `1px solid ${T.lineSoft}` }}>
       <div
         onClick={() => setOpen(!open)}
+        className="guru-row-inner"
         style={{
           display: "flex",
           alignItems: "center",
@@ -41,8 +42,9 @@ export function GuruRow({ g }: Props) {
           }}
         />
         <span style={{ fontWeight: 600, fontSize: 12, width: 90, flexShrink: 0 }}>{g.n}</span>
-        <span style={{ fontSize: 11, color: T.soft, flex: 1, minWidth: 0, wordBreak: "break-word" }}>{g.f}</span>
+        <span className="guru-row-focus" style={{ fontSize: 11, color: T.soft, flex: 1, minWidth: 0, wordBreak: "break-word" }}>{g.f}</span>
         <span
+          className="guru-row-metric"
           style={{
             fontFamily: "'IBM Plex Mono',monospace",
             fontSize: 11.5,
