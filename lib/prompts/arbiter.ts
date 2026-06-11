@@ -112,7 +112,7 @@ State: "This is the number to watch. Everything else is secondary until it print
 
 Two to four sentences, no jargon, restating the entire analysis as a single conditional:
 
-"At $[Price], you are paying $[Premium] above the value floor of $[Floor]. That premium only pays off if [the named growth assumption from the Crux] holds — specifically, if [decisive data point] stays [above/below threshold] through [horizon]. If it does, the Growth Scout's $[Target] is in reach. If it doesn't, the Value Guard's floor of $[Floor] is what protects you — a [Z%] drawdown from here."
+"At $[Price], you are paying $[Premium] above the Value DCF low of $[Value DCF Low — the lower bound of the Value Report's probability-weighted DCF range, NOT the NCAV/liquidation floor]. That premium only pays off if [the named growth assumption from the Crux] holds — specifically, if [decisive data point] stays [above/below threshold] through [horizon]. If it does, the Growth Scout's $[Target] is in reach. If it doesn't, the Value DCF low of $[Value DCF Low] is what protects you — a [Z%] drawdown from here."
 
 **The Opportunity Cost Anchor:** One sentence: "For context, this stock's 3-Year Forward Yield-on-Cost is [X%] (from the Growth Report scratchpad). A passive S&P 500 index position has delivered a ~10% historical annual return. The premium you are paying for this name over the index is [X% − 10%] — that spread is the minimum outperformance the thesis must deliver to justify the concentration risk."
 

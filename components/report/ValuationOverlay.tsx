@@ -237,10 +237,10 @@ export function ValuationOverlay({ rd }: Props) {
               gridTemplateColumns: "1fr 1fr",
               border: `1px solid ${T.line}`,
               borderRadius: 8,
-              overflow: "hidden",
+              overflow: "visible",
             }}
           >
-            <div style={{ padding: "8px 10px", background: T.growthSoft }}>
+            <div style={{ padding: "8px 10px", background: T.growthSoft, borderTopLeftRadius: 7, borderBottomLeftRadius: 7 }}>
               <div
                 style={{
                   fontSize: 9.5,
@@ -260,6 +260,8 @@ export function ValuationOverlay({ rd }: Props) {
                 padding: "8px 10px",
                 background: T.valueSoft,
                 borderLeft: `1px solid ${T.line}`,
+                borderTopRightRadius: 7,
+                borderBottomRightRadius: 7,
               }}
             >
               <div

@@ -76,7 +76,7 @@ No other text after the closing </json> tag. No markdown. No backticks. The sche
   "cruxGrowth": "2 sentences: how growth lens reads the crux metric with specific figure.",
   "cruxValue": "2 sentences: how value lens reads the same figure with its own supporting number.",
   "payingForTitle": "Short evocative title",
-  "payingForDesc": "3-4 sentences: At $X price, you are paying $Y above the $Z value floor. That premium only pays off if [named assumption]. If it does, Growth target $A is in reach. If not, Value floor $B protects you — a Z% drawdown.",
+  "payingForDesc": "3-4 sentences: At $X price, you are paying $Y above the Value DCF low of $Z (the lower bound of the value band — NOT the NCAV/liquidation floor). That premium only pays off if [named assumption]. If it does, Growth target $A is in reach. If not, the Value DCF low of $Z is what protects you — a Z% drawdown from here.",
   "decisiveDate": "Approximate date (e.g. 3 Aug 2026)",
   "decisiveText": "2 sentences: the one data point to watch and what it means for both lenses.",
   "premortemPrice": "$XX",
