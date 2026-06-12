@@ -45,7 +45,7 @@ export function ValuationOverlay({ rd }: Props) {
       </div>
 
       {/* Price axis */}
-      <div style={{ position: "relative", height: 52, margin: "26px 0 6px" }}>
+      <div style={{ position: "relative", height: 62, margin: "26px 0 18px" }}>
         <div
           style={{
             position: "absolute",
@@ -75,7 +75,7 @@ export function ValuationOverlay({ rd }: Props) {
               className="band-label"
               style={{
                 position: "absolute",
-                top: -18,
+                top: 14,
                 left: "50%",
                 transform: "translateX(-50%)",
                 whiteSpace: "nowrap",
