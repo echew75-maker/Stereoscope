@@ -44,12 +44,14 @@ export function ValuationOverlay({ rd }: Props) {
         </span>
       </div>
 
-      {/* Price axis */}
-      <div style={{ position: "relative", height: 62, margin: "26px 0 18px" }}>
+      {/* Price axis — band text lives in the legend below, not pinned above/below
+          the bands, so it can never overlap no matter how close the bands sit
+          on the axis (e.g. on narrow mobile viewports). */}
+      <div style={{ position: "relative", height: 44, margin: "30px 0 10px" }}>
         <div
           style={{
             position: "absolute",
-            top: 32,
+            top: 20,
             left: 0,
             right: 0,
             height: 5,
@@ -62,7 +64,7 @@ export function ValuationOverlay({ rd }: Props) {
           <div
             style={{
               position: "absolute",
-              top: 29,
+              top: 17,
               left: rd.valueBandLeft || "24%",
               width: rd.valueBandWidth || "16%",
               height: 10,
@@ -70,29 +72,13 @@ export function ValuationOverlay({ rd }: Props) {
               background: T.valueSoft,
               border: `1.5px solid ${T.valueLine}`,
             }}
-          >
-            <span
-              className="band-label"
-              style={{
-                position: "absolute",
-                top: 14,
-                left: "50%",
-                transform: "translateX(-50%)",
-                whiteSpace: "nowrap",
-                fontSize: 10,
-                fontWeight: 600,
-                color: T.value,
-              }}
-            >
-              {rd.valueBandLabel || "Value"}
-            </span>
-          </div>
+          />
         )}
         {rd.growthScoutOk && (
           <div
             style={{
               position: "absolute",
-              top: 29,
+              top: 17,
               left: rd.growthBandLeft || "74%",
               width: rd.growthBandWidth || "18%",
               height: 10,
@@ -100,28 +86,12 @@ export function ValuationOverlay({ rd }: Props) {
               background: T.growthSoft,
               border: `1.5px solid ${T.growthLine}`,
             }}
-          >
-            <span
-              className="band-label"
-              style={{
-                position: "absolute",
-                top: -18,
-                left: "50%",
-                transform: "translateX(-50%)",
-                whiteSpace: "nowrap",
-                fontSize: 10,
-                fontWeight: 600,
-                color: T.growth,
-              }}
-            >
-              {rd.growthBandLabel || "Growth"}
-            </span>
-          </div>
+          />
         )}
         <div
           style={{
             position: "absolute",
-            top: 12,
+            top: 0,
             left: rd.markerLeft || "57%",
             width: 3,
             height: 38,
@@ -148,6 +118,23 @@ export function ValuationOverlay({ rd }: Props) {
             Now ${rd.price}
           </span>
         </div>
+      </div>
+
+      {/* Band legend — a wrapping flex row scales to any viewport width and any
+          label length, so it can't collide the way fixed pixel-offset labels did. */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 16px", marginBottom: 18 }}>
+        {rd.growthScoutOk && (
+          <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, fontWeight: 600, color: T.growth }}>
+            <span style={{ width: 10, height: 10, borderRadius: 3, background: T.growthSoft, border: `1.5px solid ${T.growthLine}`, flexShrink: 0 }} />
+            {rd.growthBandLabel || "Growth"}
+          </span>
+        )}
+        {rd.valueScoutOk && (
+          <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, fontWeight: 600, color: T.value }}>
+            <span style={{ width: 10, height: 10, borderRadius: 3, background: T.valueSoft, border: `1.5px solid ${T.valueLine}`, flexShrink: 0 }} />
+            {rd.valueBandLabel || "Value"}
+          </span>
+        )}
       </div>
 
       {rd.overlapNote && (

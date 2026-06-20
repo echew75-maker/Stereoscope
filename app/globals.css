@@ -60,9 +60,6 @@ input::placeholder {
   /* Valuation overlay: stack both grids */
   .val-mini-grid   { grid-template-columns: 1fr !important; }
   .crux-paying-grid { grid-template-columns: 1fr !important; }
-
-  /* Price axis band labels: allow wrap so they don't overlap */
-  .band-label { white-space: normal !important; font-size: 9px !important; max-width: 70px; }
 }
 
 
